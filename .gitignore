@@ -1,0 +1,56 @@
+# Fichiers de logs
+*.log
+logs/
+
+# Fichiers de cache
+cache/
+tmp/
+
+# Fichiers de configuration locale
+.env
+config.local.php
+
+# Fichiers de base de données
+*.sql
+*.db
+
+# Fichiers d'upload (sauf structure)
+uploads/*
+!uploads/.gitkeep
+
+# Fichiers de dépendances
+vendor/
+node_modules/
+
+# Fichiers de compilation
+*.min.js
+*.min.css
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+*~
+
+# Fichiers temporaires
+*.tmp
+*.temp
+
+# Fichiers de cache PHP
+*.cache
+
+# Fichiers de session
+sessions/
+
+# Fichiers de debug
+debug.log
+error.log
+
+# Fichiers d'IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers système
+.DS_Store
+Thumbs.db

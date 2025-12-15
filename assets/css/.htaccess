@@ -1,0 +1,7 @@
+# Configuration pour le dossier public
+RewriteEngine On
+
+# Rediriger les requêtes vers les fichiers PHP appropriés
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

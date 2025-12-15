@@ -1,0 +1,505 @@
+/* ===== VARIABLES CSS ===== */
+:root {
+    --primary-color: #2c5aa0;
+    --primary-dark: #1e3d72;
+    --primary-light: #4a7fd4;
+    --success-color: #28a745;
+    --info-color: #17a2b8;
+    --text-dark: #2d3748;
+    --text-muted: #6c757d;
+    --light-bg: #f8f9fa;
+    --white: #ffff;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+    --border-radius: 12px;
+    --transition: all 0.3s ease;
+}
+
+/* ===== RESET ET BASE ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text-dark);
+    overflow-x: hidden;
+}
+
+.home-page {
+    background: var(--page-bg-gradient, linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%));
+    min-height: 100vh;
+}
+
+/* ===== HERO SECTION ===== */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: var(--white);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="rgba(255,255,255,0.05)" points="0,1000 1000,0 1000,1000"/></svg>');
+    background-size: cover;
+}
+
+.hero-section .container {
+    position: relative;
+    z-index: 2;
+}
+
+.min-vh-100 {
+    min-height: 100vh;
+    padding: 4rem 0;
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #ffff 0%, #e3f2fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-section .lead {
+    font-size: 1.3rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.hero-image {
+    position: relative;
+    animation: float 6s ease-in-out infinite;
+}
+
+.hero-image i {
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+/* ===== BOUTONS ===== */
+.btn {
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    padding: 0.75rem 2rem;
+    transition: var(--transition);
+    border: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-lg {
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+    border: none;
+    box-shadow: var(--shadow);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+}
+
+.btn-outline-primary {
+    border: 2px solid var(--white);
+    color: var(--white);
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: var(--white);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+/* ===== FEATURES SECTION ===== */
+#features {
+    background: var(--white);
+    position: relative;
+}
+
+.feature-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.feature-card:hover::before {
+    transform: scaleX(1);
+}
+
+.feature-icon {
+    transition: var(--transition);
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.1);
+}
+
+.feature-card h4 {
+    color: var(--text-dark);
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.feature-card p {
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+/* ===== WHY CHOOSE US SECTION ===== */
+.bg-light {
+    background: var(--light-bg) !important;
+}
+
+.list-unstyled li {
+    padding: 0.75rem 0;
+    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.list-unstyled li:last-child {
+    border-bottom: none;
+}
+
+.list-unstyled i {
+    font-size: 1.2rem;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hero-section .row > * {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.hero-section .col-lg-6:first-child {
+    animation-delay: 0.2s;
+}
+
+.hero-section .col-lg-6:last-child {
+    animation-delay: 0.4s;
+}
+
+.feature-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.feature-card:nth-child(1) { animation-delay: 0.1s; }
+.feature-card:nth-child(2) { animation-delay: 0.2s; }
+.feature-card:nth-child(3) { animation-delay: 0.3s; }
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 991.98px) {
+    .hero-section h1 {
+        font-size: 2.8rem;
+    }
+    
+    .hero-section .lead {
+        font-size: 1.1rem;
+    }
+    
+    .hero-image i {
+        font-size: 8rem !important;
+        margin-top: 2rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hero-section h1 {
+        font-size: 2.2rem;
+    }
+    
+    .min-vh-100 {
+        padding: 2rem 0;
+        min-height: 80vh;
+    }
+    
+    .d-flex.gap-3 {
+        flex-direction: column;
+        gap: 1rem !important;
+    }
+    
+    .btn-lg {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+    
+    .feature-card {
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .hero-section h1 {
+        font-size: 1.8rem;
+    }
+    
+    .hero-section .lead {
+        font-size: 1rem;
+    }
+    
+    .hero-image i {
+        font-size: 6rem !important;
+    }
+    
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* ===== ACCESSIBILITE ===== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus visible pour l'accessibilité */
+.btn:focus,
+a:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* ===== PERFORMANCE OPTIMIZATION ===== */
+.hero-image i,
+.feature-icon i {
+    will-change: transform;
+}
+
+.feature-card {
+    will-change: transform;
+}
+
+/* ===== IMPRESSION ===== */
+@media print {
+    .hero-section {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .btn {
+        display: none !important;
+    }
+    
+    .hero-image {
+        display: none !important;
+    }
+}
+
+/* =========================================
+   VARIABLES GLOBALES
+========================================= */
+:root {
+    --primary: #2d60ff;
+    --primary-dark: #1b3bb8;
+    --primary-light: #6b8aff;
+    --accent: #00c6ff;
+    --success: #28a745;
+    --text: #1d1d1d;
+    --muted: #646a7a;
+    --radius: 14px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.1);
+    --gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    --transition: all .3s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+/* =========================================
+   GLOBAL
+========================================= */
+body {
+    background: #eef2f7;
+    overflow-x: hidden;
+}
+
+section {
+    padding: 5rem 0;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 800;
+}
+
+/* =========================================
+   HERO SECTION
+========================================= */
+.hero-section {
+    background: var(--gradient);
+    color: white;
+    padding: 6rem 0 4rem;
+    position: relative;
+}
+
+.hero-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: .15;
+    background: url('https://www.transparenttextures.com/patterns/cubes.png');
+}
+
+.hero-title {
+    font-size: 3.4rem;
+    letter-spacing: -1px;
+}
+
+.hero-text {
+    font-size: 1.25rem;
+    opacity: .9;
+}
+
+.hero-buttons .btn {
+    padding: 0.9rem 2rem;
+    border-radius: var(--radius);
+    font-size: 1.1rem;
+}
+
+.btn-primary {
+    background: var(--accent);
+    border: none;
+    box-shadow: var(--shadow);
+}
+
+.btn-outline-primary {
+    border: 2px solid white;
+    color: white;
+}
+
+.btn-outline-primary:hover {
+    background: white;
+    color: var(--primary-dark);
+}
+
+/* Floating Icon */
+.hero-visual i {
+    font-size: 9rem;
+    opacity: .9;
+    animation: float 5s infinite ease-in-out;
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+/* =========================================
+   FEATURE CARDS
+========================================= */
+.feature-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.feature-card h4 {
+    font-size: 1.35rem;
+    margin-bottom: .75rem;
+}
+
+/* =========================================
+   WHY SECTION
+========================================= */
+.why-section i {
+    font-size: 1.4rem;
+    color: var(--success);
+}
+
+/* =========================================
+   CTA SECTION
+========================================= */
+.cta-section {
+    background: var(--gradient);
+    color: white;
+    padding: 4rem 2rem;
+    border-radius: var(--radius);
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+
+.cta-section p {
+    opacity: .9;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+@media (max-width: 768px) {
+    .hero-title { font-size: 2.5rem; }
+    .hero-visual i { font-size: 6rem; }
+}

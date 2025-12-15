@@ -1,0 +1,143 @@
+/* ===========================
+   Responsive Global Styles
+   Optimisé Desktop / Tablet / Mobile
+   =========================== */
+
+/* 🌍 Base universelle */
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+}
+
+body,
+h1, h2, h3, h4, h5, h6,
+p, a, label, input, button,
+.card, .profile-card, .stat-card,
+.calendar-card, .pointages-card {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  transition: font-size 0.3s ease-in-out, padding 0.3s ease, margin 0.3s ease;
+  color: #1f2937; /* gris sombre pour texte */
+}
+
+/* ===========================
+   🔹 Breakpoints Responsive
+   =========================== */
+
+/* Grand écran (≤ 1200px) */
+@media (max-width: 1200px) {
+  html { font-size: 14px; }
+  body, h1, h2, h3, h4, h5, h6,
+  p, a, label, input, button,
+  .card, .profile-card, .stat-card,
+  .calendar-card, .pointages-card { font-size: 0.9rem; }
+}
+
+/* Écrans moyens (≤ 992px) */
+@media (max-width: 992px) {
+  html { font-size: 13px; }
+  body, h1, h2, h3, h4, h5, h6,
+  p, a, label, input, button,
+  .card, .profile-card, .stat-card,
+  .calendar-card, .pointages-card { font-size: 0.85rem; }
+
+  /* Ajustements paddings/margins généraux */
+  .container, .content, .dashboard-section {
+    padding: 0.75rem;
+  }
+
+  .card, .profile-card, .stat-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Tablettes (≤ 768px) */
+@media (max-width: 768px) {
+  html { font-size: 12px; }
+  body, h1, h2, h3, h4, h5, h6,
+  p, a, label, input, button,
+  .card, .profile-card, .stat-card,
+  .calendar-card, .pointages-card { font-size: 0.8rem; }
+
+  /* Conteneurs plus compacts */
+  .container, .content, .dashboard-section {
+    padding: 0.5rem;
+  }
+
+  .card, .profile-card, .stat-card {
+    margin-bottom: 0.8rem;
+  }
+}
+
+/* Petits écrans / smartphones (≤ 576px) */
+@media (max-width: 576px) {
+  html { font-size: 11px; }
+  body, h1, h2, h3, h4, h5, h6,
+  p, a, label, input, button,
+  .card, .profile-card, .stat-card,
+  .calendar-card, .pointages-card { font-size: 0.75rem; }
+
+  /* Flex vertical pour tous les containers */
+  .d-flex { flex-direction: column !important; align-items: stretch !important; }
+
+  /* Boutons plus petits et padding réduit */
+  button, .btn { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+
+  /* Images responsive */
+  img, .card img, .profile-card img { max-width: 100%; height: auto; display: block; }
+}
+
+/* ===========================
+   ✨ Animations Globales
+   =========================== */
+
+/* Slide gauche */
+.slide-left-hide {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.77,0,0.175,1), opacity 0.3s ease;
+}
+.slide-left-show {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 0.4s cubic-bezier(0.77,0,0.175,1), opacity 0.3s ease;
+}
+
+/* Fade In universelle */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+/* ===========================
+   🧩 Fluidité et accessibilité
+   =========================== */
+* {
+  box-sizing: border-box;
+  transition: all 0.3s ease-in-out;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+.container { width: 100%; margin: 0 auto; padding: 1rem; }
+
+/* Focus visible pour accessibilité */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ===========================
+   🖨 Print Styles
+   =========================== */
+@media print {
+  .card, .btn, .profile-card, .stat-card,
+  .calendar-card, .pointages-card, .d-flex { display: block !important; }
+  body, .container { font-size: 12px; }
+  img { max-width: 100%; height: auto; }
+}

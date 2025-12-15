@@ -1,0 +1,68 @@
+/* Theme variables for light and dark modes
+   Applied via <body data-theme="sombre"> or data-theme="clair" */
+:root {
+  /* Light theme defaults */
+  --bg: #ffff;
+  --card-bg: #ffff;
+  --text: #172554;
+  --muted: #6b7280;
+  --primary: #0672e4;
+  --border: #e6edf8;
+  --surface-2: #f8fafc;
+  /* Page background - allows central control of page/canvas backgrounds */
+  --page-bg: #f8fafc; /* solid fallback */
+  --page-bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+body[data-theme="sombre"] {
+  --bg: #0b1220;
+  --card-bg: #0f1724;
+  --text: #e6eef8;
+  --muted: #9aa6b2;
+  --primary: #5a8bff;
+  --border: #1f2a3a;
+  --surface-2: #061223;
+  /* Dark-theme page background */
+  --page-bg: #071021;
+  --page-bg-gradient: linear-gradient(135deg, #071021 0%, #0b1220 100%);
+}
+
+/* Helpers using variables */
+body {
+  background-color: var(--bg) !important;
+  color: var(--text);
+}
+
+/* Helper utility: use page background gradient by default where appropriate */
+.page-background {
+  background: var(--page-bg-gradient, var(--page-bg));
+}
+
+.card, .settings-card {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border) !important;
+}
+
+.navbar, .header-dashboard, .dropdown-header, .dropdown-menu {
+  background-color: var(--card-bg) !important;
+}
+
+.text-muted {
+  color: var(--muted) !important;
+}
+
+.btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+.border {
+  border-color: var(--border) !important;
+}
+
+/* Status badges can remain same but ensure contrast in dark */
+.badge {
+  color: #fff;
+}
+
+/* Respect user preference when theme='auto' - JS will set appropriate data-theme */

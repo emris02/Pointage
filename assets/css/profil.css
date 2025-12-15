@@ -1,0 +1,739 @@
+/* =====================================================
+   NOUVEAU DESIGN PROFIL - SIMPLE ET CENTRÉ
+   Version autonome avec responsive intégré
+===================================================== */
+
+/* =====================================================
+   🔒 ISOLATION ET RÉINITIALISATION
+===================================================== */
+
+/* Isolation complète du profil pour éviter les conflits */
+.profile-page-wrapper {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: #151b25;
+    background: var(--page-bg, #f8fafc);
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 20px;
+    max-width: 1200px; /* limite la largeur des cartes */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.profile-page-wrapper *,
+.profile-page-wrapper *::before,
+.profile-page-wrapper *::after {
+    box-sizing: border-box;
+}
+
+/* Variables CSS isolées pour le profil */
+.profile-page-wrapper {
+    --primary-color: #0672e4;
+    --primary-dark: #0b1739;
+    --success-color: #10b981;
+    --info-color: #06b6d4;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --secondary-color: #6b7280;
+    --light-color: #f8fafc;
+    --dark-color: #2c3e50;
+    --muted-color: #64748b;
+    --border-color: #d9dbde;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.25);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* =====================================================
+   📱 RESPONSIVE INTÉGRÉ (basé sur responsive.css)
+===================================================== */
+
+/* Layout principal avec sidebar */
+body.has-sidebar .profile-page-wrapper {
+    /* rely on body padding-left (set in main.css) to offset the fixed sidebar */
+    max-width: 100%;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+/* Ensure images inside profile are responsive to avoid overflow */
+.profile-page-wrapper img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Grand écran (jusqu'à 1200px) */
+@media (max-width: 1200px) {
+    .profile-page-wrapper {
+        font-size: 14px;
+    }
+    
+    .profile-page-wrapper .card,
+    .profile-page-wrapper .btn,
+    .profile-page-wrapper .profile-name {
+        font-size: 14px;
+    }
+}
+
+/* Écrans moyens (jusqu'à 992px) */
+@media (max-width: 992px) {
+    body.has-sidebar .profile-page-wrapper {
+        margin-left: 70px;
+        width: calc(100% - 70px);
+    }
+    
+    .profile-page-wrapper {
+        font-size: 13px;
+    }
+    
+    .profile-page-wrapper .card,
+    .profile-page-wrapper .btn,
+    .profile-page-wrapper .profile-name {
+        font-size: 0.85rem;
+    }
+}
+
+/* Tablettes (jusqu'à 768px) */
+@media (max-width: 768px) {
+    .profile-page-wrapper {
+        font-size: 12px;
+    }
+    
+    .profile-page-wrapper .card,
+    .profile-page-wrapper .btn,
+    .profile-page-wrapper .profile-name {
+        font-size: 0.8rem;
+    }
+    
+    .profile-page-wrapper .container-fluid {
+        padding: 0.75rem;
+    }
+    
+    .profile-page-wrapper .card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Petits écrans / smartphones (jusqu'à 576px) */
+@media (max-width: 576px) {
+    .profile-page-wrapper {
+        font-size: 11px;
+    }
+    
+    .profile-page-wrapper .card,
+    .profile-page-wrapper .btn,
+    .profile-page-wrapper .profile-name {
+        font-size: 0.75rem;
+    }
+    
+    .profile-page-wrapper .btn {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .profile-page-wrapper .card img {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+/* Header du profil */
+.profile-header-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1d4ed8 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.profile-info-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.profile-avatar-section {
+    flex-shrink: 0;
+}
+
+.profile-avatar-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-lg);
+}
+
+.profile-avatar-initials {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-lg);
+}
+
+.profile-details h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 0 0.5rem 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.profile-position {
+    font-size: 1.1rem;
+    margin: 0 0 0.25rem 0;
+    opacity: 0.9;
+}
+
+.profile-department {
+    font-size: 0.95rem;
+    margin: 0;
+    opacity: 0.8;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Cards et contenu */
+.card {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    border: none;
+    padding: 1rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Informations personnelles */
+.info-item {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: var(--dark-color);
+    font-weight: 500;
+}
+
+.info-value a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.info-value a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* Badge QR Code */
+.badge-qr-section img {
+    max-width: 200px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.badge-qr-section img:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.no-badge-section {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.no-badge-section i {
+    color: var(--secondary-color);
+}
+
+/* Statistiques */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(248, 250, 252, 0.8);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.stat-item:hover {
+    background: rgba(248, 250, 252, 1);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.stat-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-number {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--dark-color);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+/* Activités récentes */
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(248, 250, 252, 0.8);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.activity-item:hover {
+    background: rgba(248, 250, 252, 1);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.activity-icon.type-arrivee {
+    background: var(--success-color);
+    color: white;
+}
+
+.activity-icon.type-depart {
+    background: var(--danger-color);
+    color: white;
+}
+
+.activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.25rem;
+}
+
+.activity-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+}
+
+.activity-time {
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-info-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .profile-actions {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .profile-actions .btn {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .activity-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .activity-meta {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .profile-header-section {
+        padding: 1.5rem 0;
+    }
+    
+    .profile-details h1 {
+        font-size: 1.5rem;
+    }
+    
+    .profile-avatar-img,
+    .profile-avatar-initials {
+        width: 60px;
+        height: 60px;
+        font-size: 1.2rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .profile-actions {
+        flex-direction: column;
+    }
+    
+    .profile-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-page-wrapper > * {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Amélioration de l'accessibilité */
+.btn:focus,
+.card:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* =====================================================
+   🎨 STYLES BOOTSTRAP OVERRIDE (isolation complète)
+===================================================== */
+
+/* Reset Bootstrap pour le profil */
+.profile-page-wrapper .container-fluid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin: 0;
+}
+
+.profile-page-wrapper .row {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+}
+
+.profile-page-wrapper .col-lg-4,
+.profile-page-wrapper .col-md-8,
+.profile-page-wrapper .col-md-4,
+.profile-page-wrapper .col-12 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.profile-page-wrapper .card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    background: white;
+    transition: var(--transition);
+    margin-bottom: 1.5rem;
+}
+
+.profile-page-wrapper .card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.profile-page-wrapper .card-header {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+}
+
+.profile-page-wrapper .card-body {
+    padding: 1.5rem;
+}
+
+.profile-page-wrapper .btn {
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.profile-page-wrapper .btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.profile-page-wrapper .btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.profile-page-wrapper .btn-outline-secondary {
+    background: transparent;
+    color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+}
+
+.profile-page-wrapper .btn-outline-secondary:hover {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.profile-page-wrapper .btn-outline-primary {
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.profile-page-wrapper .btn-outline-primary:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.profile-page-wrapper .alert {
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.profile-page-wrapper .alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border-left: 4px solid var(--success-color);
+}
+
+.profile-page-wrapper .alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border-left: 4px solid var(--danger-color);
+}
+
+.profile-page-wrapper .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-page-wrapper .badge.bg-primary {
+    background: var(--primary-color) !important;
+}
+
+.profile-page-wrapper .badge.bg-light {
+    background: #f8fafc !important;
+    color: var(--dark-color) !important;
+}
+
+/* =====================================================
+   🌙 MODE SOMBRE
+===================================================== */
+
+@media (prefers-color-scheme: dark) {
+    .profile-page-wrapper {
+        --light-color: #2c3e50;
+        --dark-color: #f1f5f9;
+        --secondary-color: #94a3b8;
+        --border-color: #ffff;
+        --muted-color: #64748b;
+        background: #ffff;
+        color: var(--dark-color);
+    }
+    
+    .profile-page-wrapper .card {
+        background: #2c3e50;
+        color: var(--dark-color);
+        border-color: var(--border-color);
+    }
+    
+    .profile-page-wrapper .info-item,
+    .profile-page-wrapper .stat-item,
+    .profile-page-wrapper .activity-item {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: var(--border-color);
+    }
+    
+    .profile-page-wrapper .info-value,
+    .profile-page-wrapper .stat-number,
+    .profile-page-wrapper .activity-title {
+        color: var(--dark-color);
+    }
+    
+    .profile-page-wrapper .info-label,
+    .profile-page-wrapper .stat-label {
+        color: var(--muted-color);
+    }
+}
+
+/* =====================================================
+   ♿ ACCESSIBILITÉ ET PERFORMANCE
+===================================================== */
+
+/* Focus visible amélioré */
+.profile-page-wrapper .btn:focus-visible,
+.profile-page-wrapper .card:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Support des préférences de mouvement réduit */
+@media (prefers-reduced-motion: reduce) {
+    .profile-page-wrapper *,
+    .profile-page-wrapper *::before,
+    .profile-page-wrapper *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Support haute performance */
+@media (prefers-reduced-transparency: reduce) {
+    .profile-page-wrapper .card {
+        backdrop-filter: none;
+        background: white;
+    }
+}
+
+/* Optimisation pour les écrans haute résolution */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .profile-page-wrapper .profile-avatar-img,
+    .profile-page-wrapper .profile-avatar-initials {
+        border-width: 2px;
+    }
+}
+
+/* Support pour les modes de contraste élevé */
+@media (prefers-contrast: high) {
+    .profile-page-wrapper {
+        --border-color: #000000;
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .profile-page-wrapper .card {
+        border: 2px solid var(--border-color);
+    }
+    
+    .profile-page-wrapper .btn {
+        border: 2px solid currentColor;
+    }
+}

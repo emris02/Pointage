@@ -1,0 +1,452 @@
+/* Calendrier admin/employé */
+#calendar-admin, #calendar-employee {
+    min-height: 600px;
+}
+
+@media (max-width: 768px) {
+    #calendar-admin, #calendar-employee {
+        min-height: 480px;
+    }
+}
+
+.fc .fc-toolbar-title {
+    font-weight: 600;
+}
+
+.fc .fc-button-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.fc .fc-button-primary:disabled {
+    background-color: #6ea8fe;
+    border-color: #6ea8fe;
+}
+
+/**
+ * CSS principal de l'application Pointage Xpert Pro
+ */
+
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2c3e50;
+    --success-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+/* Reset et base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Prevent horizontal scrolling caused by 100vw or fixed-position elements */
+html, body {
+    overflow-x: hidden;
+}
+
+/* Ensure media elements don't force layout overflow */
+img, picture, video, iframe, embed, object {
+    max-width: 100%;
+    height: auto;
+    display: unset;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+/* Layout principal */
+.container-fluid {
+    padding: 0px;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e9ecef;
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+    padding: 15px 20px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* Boutons */
+.btn {
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    transition: var(--transition);
+    border: none;
+    padding: 10px 20px;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-warning {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: var(--box-shadow);
+    padding: 10px 0;
+    background-color:#0672e4;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-link:hover {
+    color: var(--primary-color) !important;
+}
+
+.nav-link.active {
+    color: var(--primary-color) !important;
+    font-weight: 600;
+}
+
+/* === STYLE MODERNE ET RESPONSIVE === */
+.sidebar {
+    background: linear-gradient(180deg, #1f7edd 0%, #0b4f8e 100%);
+    min-height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding-top: 20px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    z-index: 100;
+}
+
+/* When sidebar is present, shift page content via body padding rather than
+   using 100vw calc on the main element. This avoids horizontal scroll issues. */
+body.has-sidebar {
+    padding-left: 240px; /* matches .sidebar width */
+    /* box-sizing: border-box; */
+}
+
+/* Main content wrapper used across templates (e.g. admin_dashboard_unifie.php)
+   Keep content centered and constrained. The sidebar offset is handled via
+   `body.has-sidebar { padding-left: var(--sidebar-width); }` so avoid applying
+   additional margin-left here which could cause overflow. */
+.main-content {
+    max-width: calc(1300px);
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+/* Responsive: reduce left padding when sidebar collapses or on small screens */
+@media (max-width: 992px) {
+    body.has-sidebar {
+        padding-left: 70px;
+    }
+}
+
+.sidebar-header {
+    padding: 0 20px 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: #f8f9fa;
+    font-weight: 600;
+}
+
+.sidebar-nav .nav-link {
+    color: #bdc3c7;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    font-size: 0.95rem;
+}
+
+.sidebar-nav .nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #0d6efd;
+}
+
+.sidebar-nav .nav-link.active {
+    color: #fff;
+    background: rgba(13, 110, 253, 0.12);
+    border-left: 3px solid #0d6efd;
+    font-weight: 600;
+}
+
+.sidebar-nav i {
+    width: 20px;
+    text-align: center;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 70px;
+    }
+
+    .sidebar-header h4 {
+        font-size: 0;
+    }
+
+    .sidebar-nav .nav-link {
+        justify-content: center;
+        padding: 10px;
+    }
+
+    .sidebar-nav .nav-link span,
+    .sidebar-nav .nav-link i + span {
+        display: none;
+    }
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    color: white;
+}
+
+.user-avatar {
+    margin-right: 10px;
+    font-size: 2rem;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.user-role {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* Remove hardcoded margin-left here; rely on body padding to offset the
+   fixed sidebar. Add consistent padding for main content. */
+.main-content {
+    padding: 20px;
+}
+
+/* Tables */
+.table {
+    background-color: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Badges */
+.badge {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+/* Alerts */
+.alert {
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Formulaires */
+.form-control {
+    border-radius: var(--border-radius);
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    transition: var(--transition);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--secondary-color);
+    margin-bottom: 8px;
+}
+
+/* Input groups */
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-right: none;
+}
+
+.input-group .form-control {
+    border-left: none;
+}
+
+/* Avatars */
+.avatar img {
+    object-fit: cover;
+}
+
+/* Statistiques */
+.stats-card {
+    text-align: center;
+    padding: 20px;
+}
+
+.stats-card .icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.stats-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stats-card .label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .container-fluid {
+        padding: 10px;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Utilitaires */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.shadow-lg {
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+}
