@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Fichiers de logs
 *.log
 logs/
@@ -54,3 +55,7 @@ error.log
 # Fichiers système
 .DS_Store
 Thumbs.db
+=======
+node_modules/
+.env
+>>>>>>> 2fc47109b0d43eb3be3464bd2a12f9f4e8f82762
