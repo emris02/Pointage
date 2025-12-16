@@ -12,7 +12,7 @@ $candidates = [
     __DIR__ . '/assets/img/uploads/employes/',
     __DIR__ . '/assets/img/uploads/',
     __DIR__ . '/uploads/employes/',
-    // __DIR__ . '/uploads/',
+    // __DIR__ . '/uploads/', // Disabled for security reasons
     __DIR__ . '/assets/img/',
 ];
 

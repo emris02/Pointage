@@ -4,6 +4,14 @@
  * Fichier d'initialisation principal
  */
 
+/**
+ * === Gestion de la session (UNIQUE) ===
+ * Évite les erreurs en production (ByetHost)
+ */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Chargement des constantes
 require_once __DIR__ . '/constants.php';
 
@@ -34,6 +42,16 @@ if (defined('DEBUG') && DEBUG) {
 } else {
     error_reporting(0);
     ini_set('display_errors', 0);
+}
+
+// Compatibilité : alias pour la classe Pointage namespacée
+if (class_exists('\PointagePro\Models\Pointage')) {
+    if (!class_exists('Pointage')) {
+        class_alias('\PointagePro\Models\Pointage', 'Pointage');
+    }
+    if (!class_exists('Pointage\\Models\\Pointage')) {
+        class_alias('\PointagePro\Models\Pointage', 'Pointage\\Models\\Pointage');
+    }
 }
 
 // Charger les paramètres d'administration (table `settings`) si disponible

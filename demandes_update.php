@@ -1,5 +1,5 @@
 <?php
-session_start();
+ //
 require_once __DIR__ . '/src/config/bootstrap.php';
 
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin','super_admin'])) {

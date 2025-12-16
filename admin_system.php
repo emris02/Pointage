@@ -2,7 +2,7 @@
 // admin_system.php
 // Page d'administration système (affichage / diagnostics)
 
-session_start();
+ //
 
 $pageTitle = 'Système - Admin';
 $bodyClass = 'admin-system';

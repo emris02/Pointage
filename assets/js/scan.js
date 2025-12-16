@@ -35,7 +35,7 @@ class AdvancedBadgeScanner {
             getPointagesJour: appBase + '/api/get_pointages.php', // API publique pour les pointages
             // Le système utilise actuellement un handler côté page employe_dashboard.php
             // Nous pointons vers ce fichier pour soumettre la justification via AJAX.
-            justifyDelay: appBase + '/employe_dashboard.php'
+            justifyDelay: appBase + '/api/justifier_retard.php'
         };
         
         console.log('Endpoints API configurés:', this.apiEndpoints);
@@ -968,16 +968,17 @@ class AdvancedBadgeScanner {
         if (arrEl) arrEl.textContent = emp.arrivee_time || '-';
         if (depEl) depEl.textContent = emp.depart_time || '-';
         if (statusEl) {
-+            const statusText = emp.status || (scanResult.is_late ? 'En retard' : 'À l\'heure');
-+            statusEl.textContent = statusText;
-+            statusEl.classList.remove('text-warning','text-success');
-+            if ((scanResult.is_late || (emp && emp.status && emp.status.toLowerCase().includes('retard'))) ) {
-+                statusEl.classList.add('text-warning');
-+            } else {
-+                statusEl.classList.add('text-success');
-+            }
-+        }
+            const statusText = emp.status || (scanResult.is_late ? 'En retard' : 'À l\'heure');
+            statusEl.textContent = statusText;
+            statusEl.classList.remove('text-warning','text-success');
+            if ((scanResult.is_late || (emp && emp.status && emp.status.toLowerCase().includes('retard')))) {
+                statusEl.classList.add('text-warning');
+            } else {
+                statusEl.classList.add('text-success');
+            }
+        }
     }
+    
     
     async submitJustification() {
         const reason = document.getElementById('justificationReason').value;
@@ -994,10 +995,12 @@ class AdvancedBadgeScanner {
         formData.append('employe_id', document.getElementById('justificationEmployeId').value);
         formData.append('pointage_id', document.getElementById('justificationPointageId').value);
         formData.append('date', document.getElementById('justificationDate').value);
-        formData.append('reason', reason);
+        // Use server-expected field names (French) to ensure backend receives the data
+        formData.append('raison', reason);
         formData.append('details', details);
         if (file) {
-            formData.append('attachment', file);
+            // The server expects the uploaded file under 'piece_jointe'
+            formData.append('piece_jointe', file);
         }
         // Add submit flag expected by server-side handler
         formData.append('submit_justification', '1');

@@ -184,7 +184,6 @@
 }
 
 .pagination .page-link {
-    color: var(--primary-color);
     border-color: #dee2e6;
     padding: 8px 16px;
 }

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <?php
 
 require_once 'src/config/bootstrap.php';
@@ -287,4 +286,3 @@ $pointages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 </body>
 </html>
->>>>>>> 2fc47109b0d43eb3be3464bd2a12f9f4e8f82762

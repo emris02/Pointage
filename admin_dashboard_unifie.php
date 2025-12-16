@@ -181,6 +181,59 @@ $additionalCSS = ['assets/css/admin.css'];
                         
                         <!-- Panel Heures -->
                         <?php include 'src/views/pages/panel_heures.php'; ?>
+
+                        <!-- Panel Temps Totaux (liste paginée) -->
+                        <div id="temps_totaux" class="panel-section" style="display:none;">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Temps totaux par employé</h5>
+                                    <div class="small text-muted">Affichage paginé</div>
+                                </div>
+                                <div class="card-body">
+                                    <?php if (!empty($temps_totaux)): ?>
+                                    <div class="table-responsive" style="max-height:60vh; overflow-y:auto;">
+                                        <table class="table table-sm table-hover" id="temps-totaux-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Prénom</th>
+                                                    <th>Nom</th>
+                                                    <th>Email</th>
+                                                    <th class="text-center">Temps total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($temps_totaux as $t): ?>
+                                                <?php $raw_tt = $t['total_travail'] ?? '00:00:00'; $parts_tt = explode(':', $raw_tt); $display_tt = ($parts_tt[0] ?? '00') . ':' . ($parts_tt[1] ?? '00'); ?>
+                                                <tr>
+                                                    <td><?= htmlspecialchars($t['prenom'] ?? '') ?></td>
+                                                    <td><?= htmlspecialchars($t['nom'] ?? '') ?></td>
+                                                    <td><?= htmlspecialchars($t['email'] ?? '') ?></td>
+                                                    <td class="text-center"><?= htmlspecialchars($display_tt) ?></td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Pagination simple -->
+                                    <?php if ($temps_totaux_total_pages > 1): ?>
+                                    <nav aria-label="Temps totaux pagination" class="mt-3">
+                                        <ul class="pagination pagination-sm">
+                                            <?php for ($p = 1; $p <= $temps_totaux_total_pages; $p++): ?>
+                                                <li class="page-item <?= $p === $page_heures ? 'active' : '' ?>">
+                                                    <a class="page-link" href="?page_heures=<?= $p ?>#temps_totaux"><?= $p ?></a>
+                                                </li>
+                                            <?php endfor; ?>
+                                        </ul>
+                                    </nav>
+                                    <?php endif; ?>
+
+                                    <?php else: ?>
+                                        <div class="alert alert-info">Aucune donnée disponible.</div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
                         
                         <!-- Panel Demandes -->
                         <?php include 'src/views/pages/panel_demandes.php'; ?>

@@ -504,7 +504,6 @@ document.addEventListener('DOMContentLoaded', function() {
     padding: 0.75rem 1rem;
     border-radius: 8px;
     margin: 0.15rem 0;
-    color: var(--text);
     font-size: 0.95rem;
     transition: var(--transition);
     display: flex;

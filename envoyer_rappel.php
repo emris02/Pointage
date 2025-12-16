@@ -1,6 +1,6 @@
 <?php
 require_once 'db.php';
-session_start();
+ //
 
 // Ce script doit être lancé par une tâche planifiée (cron ou Windows Task Scheduler)
 // Il envoie un rappel dans la messagerie interne 10 minutes avant la descente

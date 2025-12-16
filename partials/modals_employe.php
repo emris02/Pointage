@@ -156,6 +156,7 @@
                         <input type="email" class="form-control" id="editEmail" 
                                value="<?= htmlspecialchars($employe['email']) ?>" required>
                     </div>
+                    <div id="profileSaveFeedback" class="mt-2"></div>
                     
                     <div class="mb-3">
                         <label for="editTelephone" class="form-label">Téléphone</label>

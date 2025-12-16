@@ -108,7 +108,10 @@ $moisEntier = str_replace(array_keys($moisFR), array_values($moisFR), $moisEntie
                     $nom    = htmlspecialchars($e['nom'] ?? '');
                     $initiales = strtoupper(substr($prenom, 0, 1) . substr($nom, 0, 1));
 
-                    $temps = htmlspecialchars(substr($e['total_travail'] ?? '00:00:00', 0, 5));
+                    $raw = $e['total_travail'] ?? '00:00:00';
+                    $parts = explode(':', $raw);
+                    $temps = htmlspecialchars(($parts[0] ?? '00') . ':' . ($parts[1] ?? '00'));
+
 
                     // Départements
                     $depRaw = $e['departement'] ?? 'inconnu';

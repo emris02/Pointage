@@ -14,7 +14,7 @@ require_once __DIR__ . '/../config/boostrap.php'; // 🔗 Connexion DB
 // 🔒 Vérification des permissions
 // ---------------------------
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+     //
 }
 
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['super_admin', 'admin'])) {

@@ -10,7 +10,7 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 
-session_start();
+ //
 
 function verify_session() {
     if (!isset($_SESSION['user_id']) && !isset($_SESSION['employe_id'])) {

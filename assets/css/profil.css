@@ -660,7 +660,7 @@ body.has-sidebar .profile-page-wrapper {
     }
     
     .profile-page-wrapper .card {
-        background: #2c3e50;
+        /* background: #2c3e50; */
         color: var(--dark-color);
         border-color: var(--border-color);
     }
@@ -668,7 +668,7 @@ body.has-sidebar .profile-page-wrapper {
     .profile-page-wrapper .info-item,
     .profile-page-wrapper .stat-item,
     .profile-page-wrapper .activity-item {
-        background: rgba(30, 41, 59, 0.8);
+        /* background: rgba(30, 41, 59, 0.8); */
         border-color: var(--border-color);
     }
     

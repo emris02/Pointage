@@ -1,5 +1,5 @@
 <?php
-session_start();
+ //
 
 // Vérifier si l'employé est toujours connecté
 if (isset($_SESSION['employe_id'])) {

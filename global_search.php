@@ -3,7 +3,7 @@
  * Recherche globale avec redirection intelligente
  * Usage: global_search.php?q=terme
  */
-session_start();
+ //
 require_once __DIR__ . '/src/config/bootstrap.php';
 
 $q = trim($_GET['q'] ?? '');

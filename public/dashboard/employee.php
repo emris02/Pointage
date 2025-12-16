@@ -4,10 +4,10 @@
  * Système de Pointage Professionnel v2.0
  */
 
-session_start();
+ //
 require_once '../../config/database.php';
-require_once '../../src/Models/Employee.php';
-require_once '../../src/Models/Pointage.php';
+require_once '../../src/models/Employee.php';
+require_once '../../src/models/Pointage.php';
 require_once '../../src/Core/Security/TokenManager.php';
 
 use PointagePro\Models\Employee;

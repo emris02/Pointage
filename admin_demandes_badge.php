@@ -1,5 +1,5 @@
 <?php
-session_start();
+ //
 require 'db.php';
 
 // Fonction de génération de badge intégrée

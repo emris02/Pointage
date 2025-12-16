@@ -1,6 +1,6 @@
 <?php
 // admin_notification.php : gestion des notifications de justification de retard pour l'admin
-session_start();
+ //
 require_once 'db.php';
 
 // Vérifier que l'utilisateur est bien un admin

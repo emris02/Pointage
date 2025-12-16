@@ -1,5 +1,5 @@
 <?php
-session_start();
+ //
 require 'db.php'; // Connexion à la base
 
 // Vérifier si l'employé est connecté

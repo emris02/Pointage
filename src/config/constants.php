@@ -4,7 +4,7 @@
  */
 
 // Configuration de session
-session_start();
+ //
 date_default_timezone_set('Africa/Bamako');
 
 // Constantes de sécurité

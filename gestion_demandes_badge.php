@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <?php
 require_once 'config.php';
 
@@ -178,7 +177,7 @@ $stats = $pdo->query("
 $departements = $pdo->query("SELECT DISTINCT departement FROM employes WHERE departement IS NOT NULL ORDER BY departement")->fetchAll(PDO::FETCH_COLUMN);
 =======
 <?php
-session_start();
+ //
 require 'db.php';
 
 // Fonction de génération de badge sécurisée
@@ -355,5 +354,4 @@ $stats = $pdo->query("
 ")->fetch(PDO::FETCH_ASSOC);
 
 $departements = $pdo->query("SELECT DISTINCT departement FROM employes WHERE departement IS NOT NULL ORDER BY departement")->fetchAll(PDO::FETCH_COLUMN);
->>>>>>> 2fc47109b0d43eb3be3464bd2a12f9f4e8f82762
 ?>

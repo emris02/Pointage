@@ -1622,12 +1622,12 @@ document.addEventListener('submit', function(e) {
     }
     
     .admin-profile-card {
-        background: #2c3e50;
-        border-color: #ffff;
+        /* background: #2c3e50; */
+        border-color: #5a5959ff;
     }
     
-    .admin-profile-card .card-header {
-        background: linear-gradient(135deg, #2c3e50 0%, #ffff 100%);
+    /* .admin-profile-card .card-header {
+        background: linear-gradient(135deg, #2c3e50 0%, #ffff 100%); */
         border-color: #475569;
     }
     

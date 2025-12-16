@@ -14,7 +14,7 @@ require_once __DIR__ . '/../config/boostrap.php'; // 🔗 Connexion à la base d
 // 🔒 Vérification de session
 // ---------------------------
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+     //
 }
 
 if (!isset($_SESSION['employe_id']) && !isset($_SESSION['admin_id'])) {
