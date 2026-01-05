@@ -168,7 +168,7 @@ class Badge {
     public function deactivateToken(string $tokenHash): bool {
         $stmt = $this->db->prepare("
             UPDATE badge_tokens 
-            SET status = 'inactive' 
+            SET status = 'revoked' 
             WHERE token_hash = ?
         ");
         return $stmt->execute([$tokenHash]);

@@ -1,10 +1,10 @@
 <?php
 // db.php : Configuration et connexion PDO
 
-// Constantes de sécurité
-define('SECRET_KEY', 'GroupeXpert2025!'); // Clé secrète pour HMAC
-define('TOKEN_PREFIX', 'XPERT'); // Préfixe pour les tokens
-define('TOKEN_EXPIRATION', 7200); // secondes (2 heures)
+// // Constantes de sécurité
+// define('SECRET_KEY', 'GroupeXpert2025!'); // Clé secrète pour HMAC
+// define('TOKEN_PREFIX', 'XPERT'); // Préfixe pour les tokens
+// define('TOKEN_EXPIRATION', 7200); // secondes (2 heures)
 
 // Configuration base
 $host = "localhost";

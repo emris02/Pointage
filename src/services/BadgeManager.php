@@ -109,6 +109,51 @@ class BadgeManager {
     }
 
     /**
+     * Régénère un badge/QR pour un administrateur
+     */
+    public static function regenerateTokenForAdmin(int $admin_id, PDO $pdo): array {
+        try {
+            $pdo->beginTransaction();
+
+            // Génération du nouveau token
+            $newToken = self::generateToken($admin_id);
+
+            // SUPPRESSION DÉFINITIVE des anciens badges (avant insertion du nouveau)
+            $stmt = $pdo->prepare("DELETE FROM badge_tokens WHERE admin_id = ?");
+            $stmt->execute([$admin_id]);
+
+            // Insérer le nouveau token comme actif (colonne admin_id)
+            $stmt = $pdo->prepare("INSERT INTO badge_tokens (admin_id, token, token_hash, created_at, expires_at, ip_address, device_info, status, created_by) 
+                VALUES (?, ?, ?, NOW(), ?, ?, ?, 'active', ?)");
+            $stmt->execute([
+                $admin_id,
+                $newToken['token'],
+                $newToken['token_hash'],
+                $newToken['expires_at'],
+                $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+                $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                self::TOKEN_FORMAT_VERSION
+            ]);
+
+            $pdo->commit();
+            // Log action (using generic logger)
+            self::logAction($admin_id, 'regeneration_admin', $newToken['token_hash']);
+
+            return [
+                'status' => 'success',
+                'token' => $newToken['token'],
+                'token_hash' => $newToken['token_hash'],
+                'expires_at' => $newToken['expires_at'],
+                'generated_at' => date('Y-m-d H:i:s')
+            ];
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            self::logAction($admin_id, 'error_admin_regen', $e->getMessage());
+            throw new RuntimeException("Échec de la régénération admin: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Vérifie la validité d'un token (signature, structure, DB)
      */
     public static function verifyToken(string $token, PDO $pdo): array {
@@ -125,39 +170,26 @@ class BadgeManager {
             throw new InvalidArgumentException("Format de token invalide - pas assez de parties");
         }
         
-        $employe_id = (int)$parts[0];
-        $token_string = $parts[1]; // Le token principal
+        $declaredId = (int)$parts[0];
         
         // Calculer le hash du token pour la recherche en base
         $token_hash = hash('sha256', $token);
         file_put_contents($debugFile, "TOKEN_HASH: [$token_hash]\n", FILE_APPEND);
-        file_put_contents($debugFile, "EMPLOYE_ID: [$employe_id]\n", FILE_APPEND);
+        file_put_contents($debugFile, "DECLARED_ID: [$declaredId]\n", FILE_APPEND);
 
-        // Recherche en base avec le hash du token complet
-        $stmt = $pdo->prepare("SELECT bt.id AS badge_token_id, bt.*, e.* 
-            FROM badge_tokens bt
-            JOIN employes e ON bt.employe_id = e.id
-            WHERE bt.token_hash = ?
-            AND bt.expires_at > NOW()
-            AND bt.status = 'active'
-        ");
+        // Recherche en base avec le hash du token complet (sans présumer du type d'utilisateur)
+        $stmt = $pdo->prepare("SELECT bt.id AS badge_token_id, bt.* FROM badge_tokens bt WHERE bt.token_hash = ? AND bt.status = 'active'");
         $stmt->execute([$token_hash]);
         $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
 
         file_put_contents($debugFile, "Résultat SQL: ".($tokenData ? 'TROUVÉ' : 'AUCUN')."\n", FILE_APPEND);
-        
         if ($tokenData) {
             file_put_contents($debugFile, "TOKEN_DATA: " . json_encode($tokenData) . "\n", FILE_APPEND);
         }
 
         if (!$tokenData) {
             // Vérifier si le token existe mais est expiré
-            $stmtExpired = $pdo->prepare("SELECT bt.*, e.* 
-                FROM badge_tokens bt
-                JOIN employes e ON bt.employe_id = e.id
-                WHERE bt.token_hash = ?
-                AND bt.status = 'active'
-            ");
+            $stmtExpired = $pdo->prepare("SELECT bt.* FROM badge_tokens bt WHERE bt.token_hash = ? AND bt.status = 'active'");
             $stmtExpired->execute([$token_hash]);
             $expiredToken = $stmtExpired->fetch(PDO::FETCH_ASSOC);
             
@@ -170,19 +202,57 @@ class BadgeManager {
             }
         }
 
-        // Vérifier que le token appartient bien à l'employé
-        if ((int)$tokenData['employe_id'] !== $employe_id) {
-            file_put_contents($debugFile, "ERREUR: Token ne correspond pas à l'employé\n", FILE_APPEND);
-            throw new RuntimeException("Badge invalide - Ce badge ne vous appartient pas");
+        // Déterminer si le badge appartient à un employé ou un admin
+        $user = null;
+        if (!empty($tokenData['employe_id'])) {
+            $stmt = $pdo->prepare('SELECT id, nom, prenom, matricule, departement, adresse, "employe" AS role FROM employes WHERE id = ?');
+            $stmt->execute([(int)$tokenData['employe_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $tokenData['user_type'] = 'employe';
+            $tokenData['user_id'] = (int)$tokenData['employe_id'];
+        } elseif (!empty($tokenData['admin_id'])) {
+            // Support pour les admins
+            $stmt = $pdo->prepare('SELECT id, nom, prenom, email, role FROM admins WHERE id = ?');
+            $stmt->execute([(int)$tokenData['admin_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $tokenData['user_type'] = 'admin';
+            $tokenData['user_id'] = (int)$tokenData['admin_id'];
+        }
+
+        if (!$user) {
+            file_put_contents($debugFile, "ERREUR: Utilisateur du token introuvable\n", FILE_APPEND);
+            throw new RuntimeException("Badge invalide - Utilisateur introuvable");
+        }
+
+        // Vérifier la correspondance entre l'ID déclaré dans le token et l'utilisateur trouvé
+        if ($declaredId && $declaredId !== (int)$tokenData['user_id']) {
+            file_put_contents($debugFile, "ERREUR: ID déclaré dans le token ne correspond pas à l'utilisateur trouvé\n", FILE_APPEND);
+            throw new RuntimeException("Badge invalide - Le token ne correspond pas à l'utilisateur") ;
+        }
+
+        // Vérifications supplémentaires (expiration)
+        if (!empty($tokenData['expires_at']) && strtotime($tokenData['expires_at']) <= time()) {
+            file_put_contents($debugFile, "TOKEN EXPIRÉ (vérif expire_at)\n", FILE_APPEND);
+            throw new RuntimeException('Badge expiré - Veuillez régénérer votre badge');
         }
 
         $tokenData['validation'] = [
             'signature_valid' => true,
             'format_version' => count($parts),
-            'generated_at' => $tokenData['created_at'],
+            'generated_at' => $tokenData['created_at'] ?? null,
             'checked_at' => date('Y-m-d H:i:s')
         ];
         
+        // Joindre les informations utilisateur
+        $tokenData['user'] = $user;
+
+        // Compatibilité ascendante : exposer admin_id ou employe_id selon le cas
+        if ($tokenData['user_type'] === 'admin') {
+            $tokenData['admin_id'] = (int)$tokenData['user_id'];
+        } else {
+            $tokenData['employe_id'] = (int)$tokenData['user_id'];
+        }
+
         file_put_contents($debugFile, "VALIDATION RÉUSSIE\n\n", FILE_APPEND);
         return $tokenData;
     }

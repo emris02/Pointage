@@ -403,7 +403,7 @@ try {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        employee_id: <?= $employee['id'] ?>
+                        employe_id: <?= $employee['id'] ?>
                     })
                 });
                 
@@ -425,7 +425,7 @@ try {
         function showAlert(message, type = 'info') {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.styles.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
             alertDiv.innerHTML = `
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

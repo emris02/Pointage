@@ -395,7 +395,7 @@ public const JWT_SECRET = 'VotreCleJWT2025!';
 ### Horaires de travail
 ```sql
 -- Exemple d'horaires personnalisés
-INSERT INTO employee_schedules (employee_id, day_of_week, start_time, end_time) 
+INSERT INTO employee_schedules (employe_id, day_of_week, start_time, end_time) 
 VALUES (1, 1, '09:00:00', '17:00:00'); -- Lundi
 ```
 

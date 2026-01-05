@@ -114,7 +114,7 @@
 
                 ?>
 
-                <tr class="clickable-row" onclick="window.location.href='profil_employe.php?id=<?= $e['id'] ?>'">
+                <tr class="clickable-row" onclick="window.location.href='profil_employe.php?id=<?= $e['id'] ?>'" data-employee-id="<?= $e['id'] ?>">
 
                     <!-- PHOTO -->
                     <td>
@@ -152,10 +152,11 @@
                     <!-- STATUT -->
                     <td>
                         <?php $isActive = ($e['statut'] ?? '') === 'actif'; ?>
-                        <span class="badge bg-<?= $isActive ? 'success' : 'danger' ?>">
+                        <span class="badge status-badge bg-<?= $isActive ? 'success' : 'danger' ?>">
                             <?= $isActive ? 'Actif' : 'Inactif' ?>
                         </span>
                     </td>
+
 
                     <!-- EMBUCHE -->
                     <td><?= !empty($e['date_embauche']) ? date('d/m/Y', strtotime($e['date_embauche'])) : '—' ?></td>
@@ -179,6 +180,8 @@
                 </tbody>
             </table>
         </div>
+
+
 
         <!-- PAGINATION -->
         <?php

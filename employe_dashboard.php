@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <?php
 /**
  * Dashboard employé avec logique de justification des retards
@@ -36,6 +35,21 @@ $pageHeader = 'Mon Dashboard';
 $pageDescription = 'Votre espace personnel de pointage';
 
 $employe_id = $_SESSION['employe_id'];
+
+// HEADER SIMPLIFIÉ - Version avec toggle sidebar dynamique
+
+$theme = $_SESSION['theme'] ?? $APP_SETTINGS['theme'] ?? 'clair';
+$font_size = $APP_SETTINGS['font_size'] ?? 100;
+
+// Informations utilisateur
+$userName = isset($_SESSION['prenom']) && isset($_SESSION['nom']) 
+    ? htmlspecialchars($_SESSION['prenom'] . ' ' . $_SESSION['nom'])
+    : 'Administrateur';
+$userInitials = isset($_SESSION['prenom'], $_SESSION['nom'])
+    ? strtoupper(substr($_SESSION['prenom'], 0, 1) . substr($_SESSION['nom'], 0, 1))
+    : 'AD';
+$userRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'employe';
+$userFirstName = isset($_SESSION['prenom']) ? htmlspecialchars($_SESSION['prenom']) : 'Employe';
 
 // ✅ INITIALISATION SÉCURISÉE DES CONTRÔLEURS
 try {
@@ -508,6 +522,31 @@ foreach ($pointages_par_jour as $date => $pointageDuJour) {
     }
 }
 
+// Si un résumé mensuel est disponible depuis le controller, l'utiliser pour remplacer les valeurs calculées localement
+if (!empty($employeStats['monthly_summary'])) {
+    $monthly = $employeStats['monthly_summary'];
+    $stats['jours_presents'] = $monthly['present_days'] ?? $stats['jours_presents'];
+    $stats['jours_retards'] = $monthly['late_count'] ?? $stats['jours_retards'];
+    $stats['temps_total'] = $monthly['total_seconds'] ? gmdate('H:i:s', $monthly['total_seconds']) : $stats['temps_total'];
+    $stats['presence_rate'] = $monthly['presence_rate'] ?? ($stats['jours_presents'] > 0 ? 100 : 0);
+    $stats['avg_daily'] = isset($monthly['avg_daily_seconds']) ? gmdate('H:i:s', $monthly['avg_daily_seconds']) : '00:00:00';
+    $stats['progression_percent'] = $monthly['progression_percent'] ?? null;
+    $stats['total_pointages'] = $monthly['total_pointages'] ?? $stats['total_pointages'] ?? count($pointages);
+}
+
+// Assurer la disponibilité d'un tableau monthly (sécurité si absent)
+$monthly = $employeStats['monthly_summary'] ?? [];
+
+// Variables attendues par la vue (compatibilité avec l'ancien code)
+$joursPresents = $stats['jours_presents'] ?? ($monthly['present_days'] ?? 0);
+$joursRetards = $stats['jours_retards'] ?? ($monthly['late_count'] ?? 0);
+$totalPointages = $stats['total_pointages'] ?? ($monthly['total_pointages'] ?? count($pointages));
+$tempsTravaille = $stats['temps_total'] ?? (isset($monthly['total_seconds']) ? gmdate('H:i:s', $monthly['total_seconds']) : '00:00:00');
+$evolutionJours = $monthly['progression_percent'] ?? ($stats['progression_percent'] ?? 0);
+$evolutionJours = is_numeric($evolutionJours) ? (int)$evolutionJours : 0;
+$avgDaily = isset($monthly['avg_daily_seconds']) ? gmdate('H:i:s', $monthly['avg_daily_seconds']) : ($stats['avg_daily'] ?? '00:00:00');
+
+
 // Calcul des retards justifiés
 $retardsJustifies = 0;
 $retardsNonJustifies = $stats['jours_retards'];
@@ -554,6 +593,28 @@ foreach ($raw_derniers as $p) {
 }
 
 $derniers_pointages = array_slice($derniers_pointages, 0, 8);
+
+// Calculer la durée pour chaque arrivée/départ dans les activités récentes
+foreach ($derniers_pointages as &$dp) {
+    $dpStart = $dp['date_heure'] ?? $dp['created_at'] ?? null;
+    $dp['duration_seconds'] = null;
+    $dp['duration_formatted'] = null;
+    $dp['ongoing'] = false;
+
+    if ($dpStart && in_array($dp['type'], ['arrivee','arrival'])) {
+        // Chercher le départ suivant
+        $stmt = $pdo->prepare("SELECT COALESCE(date_heure,date_pointage,created_at) as ts FROM pointages WHERE employe_id = ? AND COALESCE(date_heure,date_pointage,created_at) > ? AND type IN ('depart','departure') ORDER BY COALESCE(date_heure,date_pointage,created_at) ASC LIMIT 1");
+        $stmt->execute([$employe_id, $dpStart]);
+        $next = $stmt->fetch(PDO::FETCH_ASSOC);
+        $end = $next['ts'] ?? null;
+
+        $dur = $pointageController->getDurationBetween($employe_id, $dpStart, $end);
+        $dp['duration_seconds'] = $dur['seconds'];
+        $dp['duration_formatted'] = $dur['formatted'];
+        $dp['ongoing'] = $end === null; // si pas de départ trouvé
+    }
+}
+unset($dp);
 
 // Données pour l'affichage
 $date_actuelle = date('d F Y');
@@ -704,6 +765,51 @@ if ($showJustificationModal) {
     <link rel="stylesheet" href="assets/css/employe_dash.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    
+    <style>
+    :root { 
+        font-size: <?= intval($font_size) ?>%; 
+        --primary: #4361ee;
+        --primary-dark: #3a56d4;
+        --primary-light: #eef2ff;
+        --danger: #ef4444;
+        --dark: #1e293b;
+        --light: #f8fafc;
+        --border: #e2e8f0;
+        --text: #1e293b;
+        --text-light: #64748b;
+        --sidebar-width: 240px;
+        --sidebar-collapsed-width: 70px;
+        --header-height: 70px;
+        --transition: all 0.3s ease;
+    }
+    
+    body {
+        background-color: var(--light);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        transition: var(--transition);
+    }
+    
+    /* Classe pour sidebar réduit */
+    body.sidebar-collapsed {
+        padding-left: var(--sidebar-collapsed-width) !important;
+    }
+    
+    body.sidebar-collapsed .header {
+        left: var(--sidebar-collapsed-width) !important;
+    }
+    
+    body.sidebar-collapsed .main-content {
+        margin-left: var(--sidebar-collapsed-width) !important;
+    }
+    
+    body.sidebar-collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+    </style>
+
     <style>
         /* Variables CSS modernes */
         :root {
@@ -800,7 +906,7 @@ if ($showJustificationModal) {
             display: grid;
             grid-template-columns: 1fr;
             gap: 1.5rem;
-            padding: 1.5rem;
+            padding: 0.5rem;
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -817,7 +923,7 @@ if ($showJustificationModal) {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             backdrop-filter: blur(10px);
             border-radius: var(--radius);
-            padding: 1rem 1.5rem;
+            padding: 0.5rem 1.5rem;
             margin-bottom: 1.5rem;
             border: none;
             box-shadow: var(--shadow-lg);
@@ -878,7 +984,7 @@ if ($showJustificationModal) {
         .profile-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 2rem;
+            padding: 0.5rem;
             margin-bottom: 1.5rem;
             border: 1px solid var(--border);
             transition: var(--transition);
@@ -929,7 +1035,7 @@ if ($showJustificationModal) {
         .detail-item {
             background: var(--light);
             border-radius: var(--radius);
-            padding: 1.5rem;
+            padding: 0.5rem;
             transition: var(--transition);
             border: 1px solid transparent;
         }
@@ -955,7 +1061,7 @@ if ($showJustificationModal) {
         .stats-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 2rem;
+            padding: 0.5rem;
             margin-bottom: 1.5rem;
             border: 1px solid var(--border);
         }
@@ -977,7 +1083,7 @@ if ($showJustificationModal) {
         .stat-item {
             background: white;
             border-radius: var(--radius);
-            padding: 1.5rem;
+            padding: 0.5rem;
             border: 1px solid var(--border);
             transition: var(--transition);
         }
@@ -1022,7 +1128,7 @@ if ($showJustificationModal) {
         .calendar-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 2rem;
+            padding: 0.5rem;
             border: 1px solid var(--border);
         }
         
@@ -1036,7 +1142,7 @@ if ($showJustificationModal) {
         .calendar-container {
             background: var(--light);
             border-radius: var(--radius);
-            padding: 1rem;
+            padding: 0.5rem;
             min-height: 400px;
         }
         
@@ -1044,7 +1150,7 @@ if ($showJustificationModal) {
         .pointages-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 2rem;
+            padding: 0.5rem;
             border: 1px solid var(--border);
         }
         
@@ -1057,7 +1163,7 @@ if ($showJustificationModal) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem;
+            padding: 0.5rem;
             border-bottom: 1px solid var(--border);
             transition: var(--transition);
         }
@@ -1108,7 +1214,7 @@ if ($showJustificationModal) {
         .badge-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 2rem;
+            padding: 0.5rem;
             border: 1px solid var(--border);
             transition: var(--transition);
         }
@@ -1154,7 +1260,7 @@ if ($showJustificationModal) {
         .info-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 2rem;
+            padding: 0.5rem;
             border: 1px solid var(--border);
         }
         
@@ -1219,7 +1325,7 @@ if ($showJustificationModal) {
         /* Responsive Design */
         @media (max-width: 768px) {
             .employe-layout {
-                padding: 1rem;
+                padding: 0.5rem;
                 gap: 1rem;
             }
             
@@ -1229,7 +1335,7 @@ if ($showJustificationModal) {
             .pointages-section,
             .badge-section,
             .info-section {
-                padding: 1.5rem;
+                padding: 0.5rem;
             }
             
             .section-header {
@@ -1280,7 +1386,7 @@ if ($showJustificationModal) {
             .stat-item,
             .detail-item,
             .info-item {
-                padding: 1rem;
+                padding: 0.5rem;
             }
             
             .profile-avatar {
@@ -1358,9 +1464,7 @@ if ($showJustificationModal) {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             color: white;
         }
-    </style>
-        /* Overlay utilisé par les dropdowns mobiles */
-        <style>
+            /* Overlay global pour dropdowns mobiles */
             #dropdownOverlay {
                 position: fixed;
                 inset: 0;
@@ -1398,150 +1502,89 @@ if ($showJustificationModal) {
     </div>
     
     <div class="employe-layout">
-        <!-- Header Principal -->
-        <header class="employe-header">
-            <div class="container-fluid">
-                <div class="row align-items-center">
-                    <div class="col-md-8 col-lg-9">
-                        <div class="d-flex align-items-center gap-3">
-                            <!-- Logo/Brand -->
-                            <div class="brand-logo d-none d-md-flex align-items-center">
-                                <div class="logo-icon bg-white rounded-circle p-2 me-2">
-                                    <i class="fas fa-user-clock text-primary"></i>
-                                </div>
-                                <span class="text-white fw-bold fs-5">Xpert Employee</span>
-                            </div>
-                            
-                            <!-- Titre + Breadcrumb -->
-                            <div class="d-flex flex-column">
-                                <h1 class="h5 text-white mb-1">
-                                    <i class="fas fa-user-circle me-2"></i>Mon Espace Personnel
-                                </h1>
-                                <nav aria-label="breadcrumb">
-                                    <ol class="breadcrumb mb-0">
-                                        <li class="breadcrumb-item">
-                                            <a href="#" class="text-white text-decoration-none">
-                                                <i class="fas fa-home me-1"></i>Accueil
-                                            </a>
-                                        </li>
-                                        <li class="breadcrumb-item active text-white" aria-current="page">
-                                            Tableau de bord
-                                        </li>
-                                    </ol>
-                                </nav>
-                            </div>
-                        </div>
+    <!-- Header Principal -->
+        <header class="header">
+            <div class="header-container">
+                <!-- Bouton Toggle Sidebar -->
+                <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- Logo -->
+                <div class="header-logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>CHAKEDA</h1>
+                        <p class="logo-subtitle">Système de Pointage</p>
+                    </div>
+                </div>
+                
+                <!-- Actions Utilisateur -->
+                <div class="header-actions">
+                    <!-- Notifications -->
+                    <div class="notification-wrapper">
+                        <button class="notification-btn" id="notificationBtn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">3</span>
+                        </button>
                     </div>
                     
-                    <div class="col-md-4 col-lg-3">
-                        <!-- Actions Header -->
-                        <div class="d-flex align-items-center justify-content-end gap-3">
-                            <!-- Notifications -->
-                            <div class="dropdown">
-                                <button class="btn btn-glass position-relative rounded-circle p-2" 
-                                        id="notificationDropdown" 
-                                        data-bs-toggle="dropdown" 
-                                        aria-expanded="false" 
-                                        aria-label="Notifications">
-                                    <i class="fas fa-bell"></i>
-                                    <?php if (!empty($notifications)): ?>
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger pulse" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">
-                                            <?= count($notifications) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </button>
-
-                                <ul class="dropdown-menu dropdown-menu-end shadow-lg glass-effect border-0" aria-labelledby="notificationDropdown" style="width: 320px;">
-                                    <li class="dropdown-header p-3">
-                                        <h6 class="mb-1 fw-bold">
-                                            <i class="fas fa-bell me-2 text-primary"></i>Notifications
-                                        </h6>
-                                        <small class="text-muted"><?= count($notifications) ?> notification(s)</small>
-                                    </li>
-                                    <li class="px-2">
-                                        <div style="max-height: 300px; overflow-y: auto;">
-                                            <?php if (!empty($notifications)): ?>
-                                                <?php foreach (array_slice($notifications, 0, 5) as $notification): ?>
-                                                    <a href="notifications.php?id=<?= $notification['id'] ?>" 
-                                                       class="dropdown-item d-flex align-items-start p-3 mb-2 rounded hover-lift text-decoration-none">
-                                                        <div class="flex-shrink-0 me-3">
-                                                            <div class="rounded-circle p-2 bg-<?= $notification['type'] === 'urgence' ? 'danger' : 'primary' ?> text-white">
-                                                                <i class="fas fa-<?= $notification['type'] === 'urgence' ? 'exclamation-triangle' : 'bell' ?>"></i>
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex-grow-1">
-                                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                <strong class="small"><?= htmlspecialchars($notification['titre'] ?? 'Notification') ?></strong>
-                                                                <span class="small text-muted"><?= date('H:i', strtotime($notification['date'] ?? 'now')) ?></span>
-                                                            </div>
-                                                            <p class="small text-muted mb-0"><?= htmlspecialchars($notification['contenu'] ?? 'Contenu indisponible') ?></p>
-                                                        </div>
-                                                    </a>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <div class="text-center py-4 text-muted">
-                                                    <i class="fas fa-bell-slash fa-2x mb-3"></i>
-                                                    <p class="mb-1 fw-medium">Aucune notification</p>
-                                                    <small>Vous serez alerté des nouveaux événements</small>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </li>
-                                    <?php if (!empty($notifications)): ?>
-                                        <li class="p-3 border-top">
-                                            <a href="notifications.php" class="btn btn-outline-primary btn-sm w-100">
-                                                <i class="fas fa-list me-1"></i> Voir toutes
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
-                                </ul>
+                    <!-- Utilisateur -->
+                    <div class="user-dropdown">
+                        <button class="user-btn" id="userBtn">
+                            <div class="user-avatar">
+                                <?= $userInitials ?>
                             </div>
-
-                            <!-- Menu Utilisateur -->
-                            <div class="dropdown">
-                                <button id="userDropdownBtnEmp" class="btn btn-glass rounded-pill d-flex align-items-center px-3 py-2" 
-                                        data-bs-toggle="dropdown" 
-                                        aria-expanded="false" 
-                                        aria-label="Menu utilisateur">
-                                    <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;font-weight:700;">
-                                        <?= htmlspecialchars($initiale) ?>
-                                    </div>
-                                    <span class="fw-medium text-white d-none d-md-inline"><?= htmlspecialchars($employe['prenom']) ?></span>
-                                    <i class="fas fa-chevron-down ms-2 small text-white dropdown-arrow"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end glass-effect shadow-lg border-0 p-2">
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-center py-2 px-3 rounded" href="profil_employe.php">
-                                            <i class="fas fa-user text-primary me-3"></i>
-                                            <span>Mon profil</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-center py-2 px-3 rounded" href="#">
-                                            <i class="fas fa-cog text-primary me-3"></i>
-                                            <span>Paramètres</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-center py-2 px-3 rounded" href="historique_pointages.php">
-                                            <i class="fas fa-history text-primary me-3"></i>
-                                            <span>Historique</span>
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider my-2"></li>
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-center py-2 px-3 rounded text-danger" href="logout.php">
-                                            <i class="fas fa-sign-out-alt me-3"></i>
-                                            <span>Déconnexion</span>
-                                        </a>
-                                    </li>
-                                </ul>
+                            <div class="user-info">
+                                <span class="user-name"><?= $userFirstName ?></span>
+                                <i class="fas fa-chevron-down"></i>
                             </div>
+                        </button>
+                        
+                        <div class="dropdown-menu">
+                            <div class="dropdown-header">
+                                <div class="user-avatar-lg">
+                                    <?= $userInitials ?>
+                                </div>
+                                <div>
+                                    <h6><?= $userName ?></h6>
+                                    <small><?= $employe ? 'Employe' : 'Admin' ?></small>
+                                </div>
+                            </div>
+                            
+                            <div class="dropdown-divider"></div>
+                            
+                            <a href="profil_admin.php" class="dropdown-item">
+                                <i class="fas fa-user-circle"></i>
+                                <span>Mon profil</span>
+                            </a>
+                            
+                            <a href="admin_settings.php" class="dropdown-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Paramètres</span>
+                            </a>
+                            
+                            <?php if ($employe): ?>
+                            <a href="admin_system.php" class="dropdown-item">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Système</span>
+                            </a>
+                            <?php endif; ?>
+                            
+                            <div class="dropdown-divider"></div>
+                            
+                            <a href="logout.php" class="dropdown-item logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Déconnexion</span>
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </header>
+
 
         <!-- Contenu Principal -->
         <main class="main-content">
@@ -2440,1117 +2483,499 @@ document.addEventListener('DOMContentLoaded', function() {
     } // end if dropdownBtn
 });
 </script>
-
-</body>
-=======
-<?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-session_start();
-require_once 'db.php';
-
-header("Cache-Control: no-store, no-cache, must-revalidate");
-header("Pragma: no-cache");
-
-if (!isset($_SESSION['employe_id'])) {
-    header("Location: login.php");
-    exit;
-}
-
-$employe_id = $_SESSION['employe_id'];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && 
-    str_contains($_SERVER["CONTENT_TYPE"] ?? '', 'application/json')) {
-
-    header('Content-Type: application/json');
-
-    $input = json_decode(file_get_contents('php://input'), true);
-    $field = $input['field'] ?? null;
-    $value = trim($input['value'] ?? '');
-
-    $allowedFields = ['nom', 'prenom', 'telephone', 'adresse', 'mot_de_passe'];
-
-    if (!$field || !in_array($field, $allowedFields) || empty($value)) {
-        echo json_encode(['success' => false, 'message' => 'Requête invalide.']);
-        exit;
-    }
-
-    try {
-        if ($field === 'mot_de_passe') {
-            $value = password_hash($value, PASSWORD_DEFAULT);
-        }
-
-        $stmt = $pdo->prepare("UPDATE employes SET `$field` = :value WHERE id = :id");
-        $stmt->execute([
-            ':value' => $value,
-            ':id' => $employe_id
-        ]);
-
-        echo json_encode(['success' => true, 'field' => $field, 'value' => $value]);
-    } catch (PDOException $e) {
-        echo json_encode(['success' => false, 'message' => 'Erreur SQL : ' . $e->getMessage()]);
-    }
-
-    exit;
-}
-
-
-$stmt = $pdo->prepare("
-    SELECT e.*, 
-           b.token AS token, 
-           b.token_hash, 
-           b.created_at, 
-           b.expires_at
-    FROM employes e 
-    LEFT JOIN (
-        SELECT employe_id, token, token_hash, created_at, expires_at
-        FROM badge_tokens
-        WHERE employe_id = ?
-        ORDER BY created_at DESC
-        LIMIT 1
-    ) b ON e.id = b.employe_id
-    WHERE e.id = ?
-");
-$stmt->execute([$employe_id, $employe_id]);
-$employe = $stmt->fetch();
-
-$departement = ucfirst(str_replace('depart_', '', $employe['departement']));
-$initiale = strtoupper(substr($employe['prenom'], 0, 1)) . strtoupper(substr($employe['nom'], 0, 1));
-$badge_actif = !empty($employe['token_hash']) && strtotime($employe['expires_at']) > time();
-$badge_type = $employe['type'] ?? 'inconnu';
-
-$departementColors = [
-    'depart_formation' => 'bg-info',
-    'depart_communication' => 'bg-warning',
-    'depart_informatique' => 'bg-primary',
-    'depart_grh' => 'bg-success',
-    'administration' => 'bg-secondary'
-];
-$departementClass = $departementColors[$employe['departement']] ?? 'bg-dark';
-
-$selected_month = isset($_GET['month']) ? (int)$_GET['month'] : date('m');
-$selected_year = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
-
-$selected_month = max(1, min(12, $selected_month));
-$selected_year = max(2020, min(2030, $selected_year));
-
-$prev_month = $selected_month - 1;
-$prev_year = $selected_year;
-if ($prev_month < 1) {
-    $prev_month = 12;
-    $prev_year--;
-}
-
-$next_month = $selected_month + 1;
-$next_year = $selected_year;
-if ($next_month > 12) {
-    $next_month = 1;
-    $next_year++;
-}
-
-$current_month = date('m');
-$current_year = date('Y');
-$allow_next = !($selected_month == $current_month && $selected_year == $current_year);
-
-$daysInMonth = cal_days_in_month(CAL_GREGORIAN, $selected_month, $selected_year);
-
-$workingDays = [];
-for ($day = 1; $day <= $daysInMonth; $day++) {
-    $date = sprintf('%04d-%02d-%02d', $selected_year, $selected_month, $day);
-    $dayOfWeek = date('N', strtotime($date));
-    if ($dayOfWeek < 6) {
-        $workingDays[] = $date;
-    }
-}
-
-$stmt = $pdo->prepare("
-    SELECT
-        DATE(date_heure) AS jour,
-        type,
-        TIME(date_heure) AS heure
-    FROM pointages
-    WHERE employe_id = ?
-    AND MONTH(date_heure) = ?
-    AND YEAR(date_heure) = ?
-    ORDER BY date_heure
-");
-$stmt->execute([$employe_id, $selected_month, $selected_year]);
-$pointages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$sql = "SELECT DISTINCT DATE(date_heure) AS date
-        FROM pointages
-        WHERE employe_id = :id_employe
-          AND MONTH(date_heure) = :month
-          AND YEAR(date_heure) = :year";
-$stmt = $pdo->prepare($sql);
-$stmt->execute([
-    'id_employe' => $employe_id,
-    'month' => $selected_month,
-    'year' => $selected_year
-]);
-$pointedDates = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-$absentDays = array_diff($workingDays, $pointedDates);
-$absencesAutorisees = 0;
-$absencesNonAutorisees = 0;
-
-foreach ($absentDays as $absentDate) {
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*)
-        FROM absences
-        WHERE id_employe = :id_employe
-          AND DATE(date_absence) = :date
-          AND statut = 'autorisé'
-    ");
-    $stmt->execute([
-        'id_employe' => $employe_id,
-        'date' => $absentDate
-    ]);
-    if ($stmt->fetchColumn()) {
-        $absencesAutorisees++;
-    } else {
-        $absencesNonAutorisees++;
-    }
-}
-
-$temps_mensuel = $pdo->prepare("
-    SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(temps_total))) AS total
-    FROM pointages
-    WHERE employe_id = ?
-      AND type = 'depart'
-      AND MONTH(date_heure) = ?
-      AND YEAR(date_heure) = ?
-");
-$temps_mensuel->execute([$employe_id, $selected_month, $selected_year]);
-$temps = $temps_mensuel->fetch();
-$temps_travail_mois = $temps['total'] ?? '00:00:00';
-
-$pointages_par_jour = [];
-foreach ($pointages as $pointage) {
-    $date = $pointage['jour'];
-    if (!isset($pointages_par_jour[$date])) {
-        $pointages_par_jour[$date] = ['arrivee' => null, 'depart' => null];
-    }
-    if ($pointage['type'] === 'arrivee') {
-        $pointages_par_jour[$date]['arrivee'] = $pointage['heure'];
-    } elseif ($pointage['type'] === 'depart') {
-        $pointages_par_jour[$date]['depart'] = $pointage['heure'];
-    }
-}
-
-$stats = [
-    'jours_presents' => 0,
-    'jours_retards' => 0,
-    'jours_absents' => 0,
-    'jours_weekend' => 0,
-    'temps_total' => 0
-];
-
-foreach ($pointages_par_jour as $date => $pointageDuJour) {
-    $dayOfWeek = date('N', strtotime($date));
-
-    if ($dayOfWeek == 7) {
-        $stats['jours_weekend']++;
-        continue;
-    }
-
-    if (isset($pointageDuJour['arrivee']) && !empty($pointageDuJour['arrivee'])) {
-        $stats['jours_presents']++;
-
-        if (strtotime($pointageDuJour['arrivee']) > strtotime('09:00:00')) {
-            $stats['jours_retards']++;
-        }
-    } else {
-        $dateWorkingDay = date('Y-m-d', strtotime($date));
-        if (in_array($dateWorkingDay, $workingDays) && !in_array($dateWorkingDay, $pointedDates)) {
-            $stats['jours_absents']++;
-        }
-    }
-}
-
-$retardsJustifies = 0;
-$retardsNonJustifies = $stats['jours_retards'];
-
-$stmt_derniers_pointages = $pdo->prepare("
-    SELECT
-        DATE(date_heure) AS jour,
-        type,
-        TIME(date_heure) AS heure
-    FROM pointages
-    WHERE employe_id = ?
-    ORDER BY date_heure DESC
-    LIMIT 5
-");
-$stmt_derniers_pointages->execute([$employe_id]);
-$derniers_pointages = $stmt_derniers_pointages->fetchAll(PDO::FETCH_ASSOC);
-
-$date_actuelle = date('d F Y');
-$mois_annee = date('F Y', mktime(0, 0, 0, $selected_month, 1, $selected_year));
-$jours_semaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
-$dernier_depart = $pdo->prepare("SELECT date_heure FROM pointages WHERE employe_id = ? AND type = 'depart' ORDER BY date_heure DESC LIMIT 1");
-$dernier_depart->execute([$employe_id]);
-$depart = $dernier_depart->fetch();
-$doit_regenerer = false;
-if ($depart && strtotime($depart['date_heure']) < time() - 3600) {
-    $doit_regenerer = true;
-}
-
-?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord - <?= htmlspecialchars($employe['prenom']) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="employe_dash.css">
-    <link rel="stylesheet" href="employe.css">
-</head>
-<body>
-    <div class="dashboard-container">
-        <div class="profile-card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4><i class="fas fa-user me-2"></i>Mon Profil</h4>
-                    <div class="position-relative">
-                        <button class="btn btn-light position-relative" 
-                                id="notificationDropdown" 
-                                data-bs-toggle="dropdown" 
-                                aria-expanded="false">
-                            <i class="fas fa-bell fa-lg"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                3
-                            </span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
-                            <li><h6 class="dropdown-header">Notifications récentes</h6></li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="notification-icon bg-primary">
-                                        <i class="fas fa-info-circle"></i>
-                                    </div>
-                                    <div class="ms-2">
-                                        <div class="notification-title">Mise à jour système</div>
-                                        <div class="notification-content small">Nouvelle version déployée ce week-end</div>
-                                        <div class="notification-time text-muted small">Il y a 2 heures</div>
-                                    </div>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="notification-icon bg-success">
-                                        <i class="fas fa-check-circle"></i>
-                                    </div>
-                                    <div class="ms-2">
-                                        <div class="notification-title">Congé approuvé</div>
-                                        <div class="notification-content small">Votre demande de congé du 15-20 juin a été approuvée</div>
-                                        <div class="notification-time text-muted small">Hier, 14:30</div>
-                                    </div>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="notification-icon bg-warning">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                    </div>
-                                    <div class="ms-2">
-                                        <div class="notification-title">Pointage manquant</div>
-                                        <div class="notification-content small">Pointage de départ manquant le 12 mai</div>
-                                        <div class="notification-time text-muted small">12 mai, 18:45</div>
-                                    </div>
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center" href="notifications.php">Voir toutes les notifications</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card-content">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="profile-section">
-                            <div class="d-flex flex-column">
-                                <div class="d-flex align-items-center mb-4">
-                                    <img src="<?= !empty($employe['photo']) ? htmlspecialchars($employe['photo']) : 'assets/default-profile.jpg' ?>" 
-                                         class="profile-avatar me-4" 
-                                         alt="Photo de profil">
-                                    
-                                    <div>
-                                        <h3><?= htmlspecialchars($employe['prenom']) ?> <?= htmlspecialchars($employe['nom']) ?></h3>
-                                        <p class="text-accent mb-2"><?= htmlspecialchars($employe['poste']) ?> | <?= htmlspecialchars($departement) ?></p>
-                                        <div class="d-flex">
-                                            <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editPhotoModal">
-                                                <i class="fas fa-camera me-1"></i> Changer photo
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editPasswordModal">
-                                                <i class="fas fa-lock me-1"></i> Modifier mot de passe
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="profile-details-vertical">
-                                    <div class="detail-item">
-                                        <div class="detail-label">Matricule</div>
-                                        <div class="detail-value">XPERT-<?= strtoupper(substr($employe['departement'], 0, 3)) ?><?= $employe['id'] ?></div>
-                                    </div>
-                                    
-                                    <div class="detail-item">
-                                        <div class="detail-label">Email</div>
-                                        <div class="detail-value"><?= htmlspecialchars($employe['email']) ?></div>
-                                    </div>
-                                    
-<!-- 📱 Téléphone -->
-                <div class="detail-item">
-                        <div class="detail-label">Téléphone</div>
-                        <div class="detail-value" id="phoneDisplay"><?= htmlspecialchars($employe['telephone']) ?></div>
-                        <input type="text" class="form-control d-none" id="phoneInput" value="<?= htmlspecialchars($employe['telephone']) ?>">    
-                        <button class="btn btn-sm btn-outline-primary edit-inline"><i class="fas fa-edit"></i></button>
-
-                        <button class="btn btn-sm btn-success d-none" id="savePhoneBtn" onclick="saveField('telephone', 'phone')">
-                        <i class="fas fa-check"></i>
-                        </button>
-                </div>
-
-<!-- 🏠 Adresse -->
-                <div class="detail-item">
-                        <div class="detail-label">Adresse</div>
-                        <div class="detail-value" id="addressDisplay"><?= htmlspecialchars($employe['adresse']) ?></div>
-                        <textarea class="form-control d-none" id="addressInput"><?= htmlspecialchars($employe['adresse']) ?></textarea>
-                        <button class="btn btn-sm btn-outline-primary edit-inline"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-success d-none" id="saveAddressBtn" onclick="saveField('adresse', 'address')">
-                        <i class="fas fa-check"></i>
-                    </button>
-                </div>
-                                  
-                                    <div class="detail-item">
-                                        <div class="detail-label">Embauché le</div>
-                                        <div class="detail-value"><?= date('d/m/Y', strtotime($employe['date_creation'])) ?></div>
-                                    </div>
-                                    
-                                    <div class="detail-item">
-                                        <div class="detail-label">Dernier pointage</div>
-                                        <div class="detail-value"><?= !empty($derniers_pointages) ? $derniers_pointages[0]['heure'] . ' (' . ucfirst($derniers_pointages[0]['type']) . ')' : 'Aucun' ?></div>
-                                    </div>
-                                    
-                                    <div class="detail-item">
-                                        <div class="detail-label">Département</div>
-                                        <div class="detail-value"><?= htmlspecialchars($departement) ?></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="d-flex flex-wrap gap-2 mt-4">
-                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                                        <i class="fas fa-user-edit me-1"></i> Modifier mon profil
-                                    </button>
-                                    <button class="btn btn-outline-success">
-                                        <i class="fas fa-file-pdf me-1"></i> Télécharger mon CV
-                                    </button>
-                                    <button class="btn btn-outline-info">
-                                        <i class="fas fa-question-circle me-1"></i> Demander de l'aide
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="badge-section">
-                            <div class="badge-header">
-                                <h5><i class="fas fa-id-card me-2"></i>Badge d'accès - <?= $badge_type ?></h5>
-                                <div class="employee-id">XPERT-<?= strtoupper(substr($employe['departement'], 0, 3)) ?><?= $employe['id'] ?></div>
-                            </div>
-                            
-                <?php if ($badge_actif): ?>
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=<?= urlencode($employe['token_hash'] ?? '') ?>" 
-                             class="badge-qr mb-1" 
-                             alt="Badge d'accès"
-                             data-bs-toggle="modal" 
-                             data-bs-target="#badgeModal">        
-                        <div class="badge-label small fw-bold">Badge actif</div>
-                        <div class="badge-expiry <?= (strtotime($employe['expires_at']) - time()) < 3600 ? 'badge-expiry-warning' : '' ?>">
-                            Valide jusqu'au <?= date('d/m/Y à H:i', strtotime($employe['expires_at'])) ?>
-                        </div>
-                        
-                        <div id="badge-timer" class="small fw-bold mt-1"></div>
-                
-                        <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-outline-primary flex-grow-1" data-bs-toggle="modal" data-bs-target="#badgeModal">
-                                <i class="fas fa-expand me-1"></i> Voir en grand
-                            </button>
-                            <button class="btn btn-sm btn-outline-success flex-grow-1">
-                                <i class="fas fa-print me-1"></i> Imprimer
-                            </button>
-                        </div>
-                                
-<?php if (isset($_SESSION['success_message'])): ?>
-    <div class="alert alert-success mt-2">
-        <?= $_SESSION['success_message'] ?>
-    </div>
-    <?php unset($_SESSION['success_message']); ?>
-<?php endif; ?>
-
-<?php else: ?>
-    <div class="no-badge">
-        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-        <p class="mb-3">Aucun badge actif</p>
-
-        <!-- ✅ Formulaire minimal pour envoyer la demande -->
-        <form action="demandes_badge.php" method="post" class="w-100">
-            <input type="hidden" name="demander_badge" value="1">
-            <input type="hidden" name="raison" value="Demande rapide via dashboard">
-
-            <?php if (isset($_SESSION['success_message'])): ?>
-    <div class="alert alert-success mt-3">
-        <?= $_SESSION['success_message']; ?>
-    </div>
-    <?php unset($_SESSION['success_message']); ?>
-<?php endif; ?>
-
-<!-- Bouton pour ouvrir le modal -->
-<button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalDemandeBadge">
-    <i class="fas fa-sync-alt me-2"></i>Demander un badge
-</button>
-
-        </form>
-    </div>
-<?php endif; ?>     
-                        <div class="additional-info mt-4">
-                            <h5><i class="fas fa-info-circle me-2"></i> Informations complémentaires</h5>
-                            <ul class="info-list">
-                                <li>
-                                    <i class="fas fa-medal text-primary"></i>
-                                    <span>Ancienneté: <?= date('Y') - date('Y', strtotime($employe['date_creation'])) ?> ans</span>
-                                </li>
-                                <li>
-                                    <i class="fas fa-calendar-check text-success"></i>
-                                    <span>Congés restants: 
-                                        <?php
-                                        $stmt = $pdo->prepare("SELECT jours_restants FROM conges WHERE employe_id = ?");
-                                        $stmt->execute([$employe_id]);
-                                        $conges = $stmt->fetch();
-                                        echo $conges ? htmlspecialchars($conges['jours_restants']) : '12';
-                                        ?> jours
-                                    </span>
-                                </li>
-                                <li>
-                                    <i class="fas fa-file-contract text-info"></i>
-                                    <span>Contrat: <?= htmlspecialchars($employe['type_contrat'] ?? 'CDI') ?></span>
-                                </li>
-                                <li>
-                                    <i class="fas fa-user-tie text-warning"></i>
-                                    <span>Manager: 
-                                        <?php
-                                        $stmt = $pdo->prepare("SELECT CONCAT(prenom, ' ', nom) AS manager 
-                                                              FROM admins 
-                                                              WHERE poste = ? AND role = 'manager' 
-                                                              LIMIT 1");
-                                        $stmt->execute([$employe['departement']]);
-                                        $manager = $stmt->fetch();
-                                        echo $manager ? htmlspecialchars($manager['manager']) : 'Non assigné';
-                                        ?>
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="editEmailModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Modifier mon email</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="emailForm">
-                            <div class="mb-3">
-                                <label for="currentEmail" class="form-label">Email actuel</label>
-                                <input type="email" class="form-control" id="currentEmail" value="<?= htmlspecialchars($employe['email']) ?>" readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label for="newEmail" class="form-label">Nouvel email</label>
-                                <input type="email" class="form-control" id="newEmail" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="confirmEmail" class="form-label">Confirmer le nouvel email</label>
-                                <input type="email" class="form-control" id="confirmEmail" required>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="button" class="btn btn-primary">Enregistrer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="editPhoneModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Modifier mon numéro de téléphone</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="phoneForm">
-                            <div class="mb-3">
-                                <label for="currentPhone" class="form-label">Téléphone actuel</label>
-                                <input type="text" class="form-control" id="currentPhone" value="<?= htmlspecialchars($employe['telephone']) ?>" readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label for="newPhone" class="form-label">Nouveau numéro</label>
-                                <input type="text" class="form-control" id="newPhone" required>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="button" class="btn btn-primary">Enregistrer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="editAddressModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Modifier mon adresse</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="addressForm">
-                            <div class="mb-3">
-                                <label for="currentAddress" class="form-label">Adresse actuelle</label>
-                                <textarea class="form-control" id="currentAddress" rows="2" readonly><?= htmlspecialchars($employe['adresse']) ?></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="newAddress" class="form-label">Nouvelle adresse</label>
-                                <textarea class="form-control" id="newAddress" rows="3" required></textarea>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="button" class="btn btn-primary">Enregistrer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="editPhotoModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Changer ma photo de profil</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="text-center mb-4">
-                            
-                            <img src="<?= !empty($employe['photo']) ? htmlspecialchars($employe['photo']) : 'assets/default-profile.jpg' ?>" 
-                                 class="img-fluid rounded-circle mb-3" 
-                                 alt="Photo actuelle"
-                                 style="width: 150px; height: 150px;">
-                        </div>
-                        <form id="photoForm">
-                            <div class="mb-3">
-                                <label for="formFile" class="form-label">Sélectionner une nouvelle photo</label>
-                                <input class="form-control" type="file" id="formFile" accept="image/*">
-                            </div>
-                            <div class="form-text mb-3">
-                                Taille maximale: 2MB. Formats acceptés: JPG, PNG.
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="button" class="btn btn-primary">Télécharger</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="editPasswordModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Modifier mon mot de passe</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="passwordForm">
-                            <div class="mb-3">
-                                <label for="currentPassword" class="form-label">Mot de passe actuel</label>
-                                <input type="password" class="form-control" id="currentPassword" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="newPassword" class="form-label">Nouveau mot de passe</label>
-                                <input type="password" class="form-control" id="newPassword" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="confirmPassword" class="form-label">Confirmer le nouveau mot de passe</label>
-                                <input type="password" class="form-control" id="confirmPassword" required>
-                            </div>
-                            <div class="form-text">
-                                Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="button" class="btn btn-primary">Enregistrer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- MODAL de demande de badge -->
-
-<div class="modal fade" id="modalDemandeBadge" tabindex="-1" aria-labelledby="modalDemandeBadgeLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <form action="demandes_badge.php" method="POST" class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="modalDemandeBadgeLabel"><i class="fas fa-id-card me-2"></i>Demande de badge</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="mb-3">
-          <label for="raison" class="form-label">Raison de la demande</label>
-          <textarea name="raison" id="raison" class="form-control" rows="4" required></textarea>
-        </div>
-        <input type="hidden" name="demander_badge" value="1">
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i>Envoyer</button>
-      </div>
-    </form>
-  </div>
-</div>                   
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h5><i class="fas fa-clock me-2"></i> Présence ce mois</h5>
-                <h2><?= $stats['jours_presents'] ?></h2>
-                <small>Jours de présence</small>
-            </div>
-            <div class="stat-card">
-                <h5><i class="fas fa-calendar-check me-2"></i> Pointages</h5>
-                <h2><?= count($pointages) ?></h2>
-                <small>Enregistrements</small>
-            </div>
-            <div class="stat-card">
-                <h5><i class="fas fa-exclamation-triangle me-2"></i> Retards</h5>
-                <h2><?= $stats['jours_retards'] ?></h2>
-                <small>Jours avec retard</small>
-            </div>
-            <div class="stat-card">
-                <h5><i class="fas fa-user-times me-2"></i> Absences</h5>
-                <h2><?= $stats['jours_absents'] ?></h2>
-                <small>Jours sans pointage</small>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-lg-6">
-                <div class="calendar-card" id="calendar-section">
-                    <div class="card-header">
-                        <h4><i class="fas fa-calendar-alt me-2"></i> Calendrier de présence</h4>
-                    </div>
-                    <div class="card-content">
-                        <div class="calendar-header">
-                            <div class="calendar-title">
-                                <i class="fas fa-calendar me-2"></i> <?= $mois_annee ?>
-                            </div>
-                            <div class="calendar-nav">
-                                <a href="?month=<?= $prev_month ?>&year=<?= $prev_year ?>#calendar-section" 
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                                <a href="<?= $allow_next ? '?month='.$next_month.'&year='.$next_year.'#calendar-section' : '#' ?>" 
-                                   class="btn btn-sm btn-outline-primary ms-2 <?= !$allow_next ? 'disabled' : '' ?>">
-                                    <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div class="days-header">
-                            <?php foreach ($jours_semaine as $jour): ?>
-                                <div><?= $jour ?></div>
-                            <?php endforeach; ?>
-                        </div>
-                        
-                        <div class="calendar-grid">
-                            <?php
-                            $firstDayOfMonth = date('N', strtotime("$selected_year-$selected_month-01"));
-                            for ($i = 1; $i < $firstDayOfMonth; $i++): ?>
-                                <div class="day-box future"></div>
-                            <?php endfor;
-                            
-                            // Réinitialiser les stats pour recalcul avec demi-journées
-                            $stats = [
-                                'jours_presents' => 0,
-                                'jours_retards' => 0,
-                                'jours_absents' => 0,
-                                'jours_weekend' => 0,
-                                'demi_jours' => 0
-                            ];
-                            
-                            for ($day = 1; $day <= $daysInMonth; $day++):
-                                $date = sprintf('%04d-%02d-%02d', $selected_year, $selected_month, $day);
-                                $class = 'future';
-                                $status = '';
-                                $isToday = ($day == date('j') && $selected_month == date('m') && $selected_year == date('Y'));
-                                $dayOfWeek = date('N', strtotime($date));
-                                $isHalfDay = ($dayOfWeek == 6); // Samedi = demi-journée
-                                
-                                if ($dayOfWeek == 7) { // Dimanche
-                                    $class = 'weekend';
-                                    $status = 'Week-end';
-                                    $stats['jours_weekend']++;
-                                } elseif (strtotime($date) <= time()) {
-                                    if ($isHalfDay) {
-                                        // Traitement spécial pour les samedis (demi-journées)
-                                        $isPresent = false;
-                                        $isLate = false;
-                                        
-                                        if (isset($pointages_par_jour[$date]) && !empty($pointages_par_jour[$date]['arrivee'])) {
-                                            $heureArriveeTimestamp = strtotime($pointages_par_jour[$date]['arrivee']);
-                                            
-                                            // Vérifier si l'employé est arrivé avant 14h pour la demi-journée
-                                            if ($heureArriveeTimestamp !== false && $heureArriveeTimestamp < strtotime('14:00:00')) {
-                                                $isPresent = true;
-                                                
-                                                // Vérifier s'il est arrivé après 9h pour un retard
-                                                if ($heureArriveeTimestamp > strtotime('09:00:00')) {
-                                                    $class = 'retard';
-                                                    $status = 'Retard';
-                                                    $isLate = true;
-                                                } else {
-                                                    $class = 'presence';
-                                                    $status = 'Présent';
-                                                }
-                                            }
-                                        }
-                                        
-                                        if ($isPresent) {
-                                            $stats['jours_presents'] += 0.5;
-                                            if ($isLate) {
-                                                $stats['jours_retards'] += 0.5;
-                                            }
-                                        } else {
-                                            $class = 'absence';
-                                            $status = 'Absent';
-                                            $stats['jours_absents'] += 0.5;
-                                        }
-                                        
-                                        $stats['demi_jours']++;
-                                    } else {
-                                        // Journée complète (lundi-vendredi)
-                                        if (isset($pointages_par_jour[$date]) && !empty($pointages_par_jour[$date]['arrivee'])) {
-                                            $heureArriveeTimestamp = strtotime($pointages_par_jour[$date]['arrivee']);
-                                            if ($heureArriveeTimestamp !== false) {
-                                                if ($heureArriveeTimestamp > strtotime('09:00:00')) {
-                                                    $class = 'retard';
-                                                    $status = 'Retard';
-                                                    $stats['jours_retards']++;
-                                                } else {
-                                                    $class = 'presence';
-                                                    $status = 'Présent';
-                                                }
-                                                $stats['jours_presents']++;
-                                            }
-                                        } else {
-                                            $class = 'absence';
-                                            $status = 'Absent';
-                                            $stats['jours_absents']++;
-                                        }
-                                    }
-                                }
-                                ?>
-                                <div class="day-box <?= $class ?> <?= $isToday ? 'today' : '' ?> <?= $isHalfDay ? 'half-day' : '' ?>"
-                                     title="<?= htmlspecialchars("Jour $day - $status") ?>">
-                                    <span class="day-number"><?= $day ?></span>
-                                    <?php if ($status): ?>
-                                        <span class="day-status"><?= $status ?></span>
-                                    <?php endif; ?>
-                                    <?php if ($isHalfDay): ?>
-                                        <span class="half-day-indicator">½</span>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endfor;
-                            
-                            $lastDayOfMonth = date('N', strtotime("$selected_year-$selected_month-$daysInMonth"));
-                            if ($lastDayOfMonth < 7) {
-                                for ($i = $lastDayOfMonth; $i < 7; $i++) {
-                                    echo '<div class="day-box future"></div>';
-                                }
-                            }
-                            ?>
-                        </div>
-                        
-                        <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
-                            <span class="status-badge bg-success">
-                                <i class="fas fa-circle"></i> Présent <?= $stats['jours_presents'] ?> j
-                            </span>
-                            <span class="status-badge bg-warning">
-                                <i class="fas fa-clock"></i> Retard <?= $stats['jours_retards'] ?> j
-                            </span>
-                            <span class="status-badge bg-danger">
-                                <i class="fas fa-times"></i> Absent <?= $stats['jours_absents'] ?> j
-                            </span>
-                            <span class="status-badge bg-secondary">
-                                <i class="fas fa-umbrella-beach"></i> Week-end <?= $stats['jours_weekend'] ?> j
-                            </span>
-                            <?php if ($stats['demi_jours'] > 0): ?>
-                            <span class="status-badge bg-info">
-                                <i class="fas fa-clock-half"></i> Demi-journées: <?= $stats['demi_jours'] ?>
-                            </span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-6">
-                <div class="pointages-card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4><i class="fas fa-history me-2"></i> Mes derniers pointages</h4>
-                            <?php if ($badge_actif): ?>
-                                <a href="index.php?employe_id=<?= $_SESSION['employe_id'] ?>" class="btn btn-sm btn-light">
-                                    <i class="fas fa-id-card me-1"></i> Afficher mon badge
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <?php if (!empty($derniers_pointages)): ?>
-                            <div class="pointages-list">
-                                <?php foreach ($derniers_pointages as $pointage): ?>
-                                    <div class="pointage-item">
-                                        <div class="pointage-header">
-                                            <div>
-                                                <strong class="<?= $pointage['type'] === 'arrivee' ? 'text-success' : 'text-danger' ?>">
-                                                    <?= ucfirst($pointage['type']) ?>
-                                                </strong>
-                                                <span class="pointage-date ms-2"><?= date('d/m/Y', strtotime($pointage['jour'])) ?></span>
-                                            </div>
-                                            <div class="pointage-time">
-                                                <?= $pointage['heure'] ?>
-                                                <?php if ($pointage['type'] === 'arrivee' && strtotime($pointage['heure']) > strtotime('09:00:00')): ?>
-                                                    <i class="fas fa-clock ms-1 text-warning"></i>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="text-center py-4">
-                                <i class="fas fa-clock fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Aucun pointage enregistré</p>
-                                <?php if ($badge_actif): ?>
-                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#badgeModal">
-                                        <i class="fas fa-id-card me-1"></i> Afficher mon badge
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                
-                <div class="profile-card mt-4">
-                    <div class="card-header">
-                        <h4><i class="fas fa-tasks me-2"></i> Actions rapides</h4>
-                    </div>
-                    <div class="card-content">
-                        <div class="btn-group">
-                            <a href="scan_qr.php" class="btn btn-primary">
-                                <i class="fas fa-camera me-2"></i> Zone de pointage
-                            </a>
-                            <a href="historique_pointages.php" class="btn btn-outline-primary">
-                                <i class="fas fa-history me-2"></i> Historique
-                            </a>
-                            <a href="logout.php" class="btn btn-outline-danger" onclick="return confirm('Déconnexion ?')">
-                                <i class="fas fa-sign-out-alt me-2"></i> Déconnexion
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="modal fade" id="badgeModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Mon badge d'accès</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <?php if ($badge_actif): ?>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=<?= urlencode($employe['token_hash'] ?? '') ?>" 
-                             class="img-fluid mb-3" 
-                             alt="Badge d'accès">
-                        <h5><?= htmlspecialchars($employe['prenom'] ?? '') ?> <?= htmlspecialchars($employe['nom'] ?? '') ?></h5>
-                        <p class="text-muted mb-1"><?= htmlspecialchars($employe['poste'] ?? '') ?></p>
-                        <p class="text-muted"><?= htmlspecialchars($departement ?? '') ?></p>
-                        <div class="alert alert-info mt-3">
-                            <i class="fas fa-clock me-2"></i>
-                            Valide jusqu'au <?= date('d/m/Y à H:i', strtotime($employe['expires_at'])) ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i> Aucun badge actif
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                </div>
-            </div>
-        </div>
-    </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (element) {
-            return new bootstrap.Tooltip(element);
-        });     
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const userBtn = document.getElementById('userBtn');
+    const userDropdown = document.querySelector('.user-dropdown .dropdown-menu');
+    const notificationBtn = document.getElementById('notificationBtn');
+    const body = document.body;
+    
+    // ============================================
+    // TOGGLE SIDEBAR (FONCTION PRINCIPALE)
+    // ============================================
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            // Basculer l'état du sidebar
+            body.classList.toggle('sidebar-collapsed');
+            
+            // Sauvegarder dans localStorage
+            localStorage.setItem('sidebarCollapsed', body.classList.contains('sidebar-collapsed'));
+            
+            // Émettre un événement pour que le sidebar puisse réagir
+            window.dispatchEvent(new CustomEvent('sidebarToggle', {
+                detail: { collapsed: body.classList.contains('sidebar-collapsed') }
+            }));
+        });
         
-        <?php if (isset($_GET['new_badge'])): ?>
-            setTimeout(() => {
-                const toast = document.createElement('div');
-                toast.className = 'position-fixed bottom-0 end-0 p-3';
-                toast.style.zIndex = '11';
-                toast.innerHTML = `
-                    <div class="toast show" role="alert">
-                        <div class="toast-header bg-success text-white">
-                            <strong class="me-auto">Nouveau badge généré</strong>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                        </div>
-                        <div class="toast-body">
-                            Votre badge a été régénéré avec succès. Valide jusqu'au <?= date('d/m/Y H:i', strtotime($badge_tokens['expires_at'])) ?>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(toast);          
-                setTimeout(() => {
-                    toast.remove();
-                }, 5000);
-            }, 1000);
-        <?php endif; ?>
-
-        <?php if (isset($_GET['badge_updated'])): ?>
-            showToast('Badge mis à jour', 'Un nouveau badge a été généré automatiquement', 'success');
-        <?php endif; ?>
-        
-        function showToast(title, message, type) {
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white bg-${type} border-0 show`;
-            toast.setAttribute('role', 'alert');
-            toast.setAttribute('aria-live', 'assertive');
-            toast.setAttribute('aria-atomic', 'true');
-            toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">
-                        <strong>${title}</strong><br>${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            `;
-            document.getElementById('alertsContainer').appendChild(toast);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
+        // Restaurer l'état depuis localStorage
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            body.classList.add('sidebar-collapsed');
         }
-
-        function checkBadgeExpiry() {
-            const expiryElement = document.querySelector('.badge-expiry');
-            if (expiryElement) {
-                const expiryText = expiryElement.innerText;
-                if (expiryText.includes("Badge actif") && expirationTimestamp <= Math.floor(Date.now() / 1000)) {
-                    showToast('Badge Expire', 'Votre badge d\'accès a expiré. Veuillez le renouveler.', 'danger');
-                    expiryElement.innerText = "Badge expiré";
-                    expiryElement.classList.remove("text-success");
-                    expiryElement.classList.add("text-danger");
-                    clearInterval(timerInterval);
-                }
+    }
+    
+    // ============================================
+    // DROPDOWN UTILISATEUR
+    // ============================================
+    if (userBtn && userDropdown) {
+        let isUserDropdownOpen = false;
+        
+        userBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            isUserDropdownOpen = !isUserDropdownOpen;
+            userDropdown.classList.toggle('show', isUserDropdownOpen);
+            userBtn.querySelector('.fa-chevron-down').style.transform = 
+                isUserDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        });
+        
+        // Fermer au clic extérieur
+        document.addEventListener('click', function(e) {
+            if (isUserDropdownOpen && !userDropdown.contains(e.target) && !userBtn.contains(e.target)) {
+                userDropdown.classList.remove('show');
+                isUserDropdownOpen = false;
+                userBtn.querySelector('.fa-chevron-down').style.transform = 'rotate(0deg)';
             }
-        }
-        setInterval(checkBadgeExpiry, 60000);
+        });
         
-    </script>
-    <script>
-    document.querySelectorAll('.edit-inline').forEach(btn => {
-    btn.addEventListener('click', function () {
-        const container = this.closest('.detail-item');
-        const label = container.querySelector('.detail-label').textContent.trim().toLowerCase();
-        const fieldMap = {
-            'nom': 'nom',
-            'prénom': 'prenom',
-            'téléphone': 'telephone',
-            'adresse': 'adresse',
-            'email': 'email'
-        };
-
-        const field = fieldMap[label];
-        const valueElement = container.querySelector('.detail-value');
-        const currentValue = valueElement.textContent.trim();
-
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = currentValue;
-        input.className = 'form-control form-control-sm mt-2';
-
-        valueElement.replaceWith(input);
-        this.textContent = '✔️';
-        this.classList.remove('btn-outline-primary');
-        this.classList.add('btn-success');
-
-        this.addEventListener('click', function save() {
-            fetch('employe_dashboard.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: field, value: input.value })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const newSpan = document.createElement('div');
-                    newSpan.className = 'detail-value';
-                    newSpan.textContent = input.value;
-                    input.replaceWith(newSpan);
-                    this.innerHTML = '<i class="fas fa-edit"></i>';
-                    this.classList.remove('btn-success');
-                    this.classList.add('btn-outline-primary');
-                } else {
-                    alert(data.message || 'Erreur inconnue');
-                }
-            })
-            .catch(err => alert('Erreur réseau : ' + err.message));
-        }, { once: true });
+        // Empêcher la fermeture quand on clique dans le dropdown
+        userDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    // ============================================
+    // NOTIFICATIONS
+    // ============================================
+    if (notificationBtn) {
+        notificationBtn.addEventListener('click', function() {
+            // Ici, tu peux ajouter la logique pour afficher les notifications
+            // Par exemple, ouvrir un modal ou une dropdown
+            alert('Fonctionnalité notifications à implémenter');
+        });
+    }
+    
+    // ============================================
+    // RESPONSIVE
+    // ============================================
+    function handleResize() {
+        // Sur mobile, on peut vouloir cacher le nom d'utilisateur
+        if (window.innerWidth < 768) {
+            document.querySelector('.user-name').style.display = 'none';
+        } else {
+            document.querySelector('.user-name').style.display = 'inline-block';
+        }
+        
+        // Sur très petits écrans, on peut ajuster le logo
+        if (window.innerWidth < 576) {
+            document.querySelector('.logo-subtitle').style.display = 'none';
+        } else {
+            document.querySelector('.logo-subtitle').style.display = 'block';
+        }
+    }
+    
+    // Écouter le redimensionnement
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Appel initial
+    
+    // ============================================
+    // ACCESSIBILITÉ
+    // ============================================
+    // Navigation au clavier
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            // Fermer tous les dropdowns ouverts
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
     });
 });
 </script>
 
-<script src="main.js"></script>
+<style>
+/* =======================================================
+   HEADER STYLES
+======================================================= */
+.header {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    height: var(--header-height);
+    background: white;
+    border-bottom: 1px solid var(--border);
+    z-index: 1030;
+    transition: var(--transition);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 1.5rem;
+}
+
+/* =======================================================
+   TOGGLE SIDEBAR BUTTON
+======================================================= */
+.sidebar-toggle {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-right: 1rem;
+}
+
+.sidebar-toggle:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.sidebar-toggle i {
+    transition: transform 0.3s ease;
+}
+
+/* =======================================================
+   LOGO
+======================================================= */
+.header-logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.logo-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dark);
+    margin: 0;
+    line-height: 1;
+}
+
+.logo-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* =======================================================
+   HEADER ACTIONS
+======================================================= */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* =======================================================
+   NOTIFICATIONS
+======================================================= */
+.notification-btn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 8px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.notification-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger);
+    color: white;
+    font-size: 0.7rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+/* =======================================================
+   USER DROPDOWN
+======================================================= */
+.user-dropdown {
+    position: relative;
+}
+
+.user-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.user-btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.user-avatar-lg {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.user-info .fa-chevron-down {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    transition: transform 0.3s ease;
+}
+
+/* DROPDOWN MENU */
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    width: 280px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1050;
+}
+
+.dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-header {
+    padding: 0.5rem;
+    background: var(--primary-light);
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dropdown-header h6 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.dropdown-header small {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0;
+    border: none;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 1.5rem;
+    color: var(--text);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.dropdown-item:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.dropdown-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.dropdown-item.logout {
+    color: var(--danger);
+}
+
+.dropdown-item.logout:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* =======================================================
+   MAIN CONTENT
+======================================================= */
+.main-content {
+    margin-left: var(--sidebar-width);
+    margin-top: var(--header-height);
+    padding: 0.5rem !important;
+    min-height: calc(100vh - var(--header-height));
+    transition: var(--transition);
+}
+
+/* =======================================================
+   RESPONSIVE DESIGN
+======================================================= */
+@media (max-width: 991.98px) {
+    .header {
+        left: 0 !important;
+    }
+    
+    .main-content {
+        margin-left: 0;
+        margin-top: calc(var(--header-height) + 1rem);
+    }
+    
+    .header-container {
+        padding: 0 1rem;
+    }
+    
+    .logo-text h1 {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .user-name {
+        display: none;
+    }
+    
+    .user-btn {
+        padding: 0.5rem;
+    }
+    
+    .logo-subtitle {
+        display: none !important;
+    }
+    
+    .dropdown-menu {
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        width: calc(100% - 2rem);
+        max-width: 400px;
+    }
+    
+    .dropdown-menu.show {
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .header-logo {
+        gap: 0.75rem;
+    }
+    
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    .logo-text h1 {
+        font-size: 1.1rem;
+    }
+    
+    .sidebar-toggle {
+        width: 36px;
+        height: 36px;
+        margin-right: 0.75rem;
+    }
+    
+    .notification-btn,
+    .user-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        justify-content: center;
+    }
+    
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+}
+</style>
+
 </body>
->>>>>>> 2fc47109b0d43eb3be3464bd2a12f9f4e8f82762
 </html>

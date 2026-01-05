@@ -278,7 +278,7 @@ legend {
 footer {
   background-color: var(--card-bg);
   font-size: 0.9rem;
-  padding: 1rem 0;
+  padding: 0.5rem 0;
 }
 footer a {
   color: var(--text-muted);
@@ -303,7 +303,7 @@ footer a:hover {
 /* ===== RESPONSIVE ===== */
 @media (max-width: 992px) {
   .settings-card {
-    padding: 1.5rem;
+    padding: 0.5rem;
   }
 }
 

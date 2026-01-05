@@ -34,6 +34,23 @@ $adminService = new AdminService($pdo);
 
 // Récupération des données via le service
 $dashboardData = $adminService->getDashboardData();
+// Sécurisation des stats
+$totalEmployes   = (int)($stats['total_employes'] ?? 0);
+$presentsToday   = (int)($stats['present_today'] ?? 0);
+$absentsToday    = (int)($stats['absents_today'] ?? 0);
+$retardsToday    = (int)($stats['retards_today'] ?? 0);
+
+// Heures mensuelles (ex: ['Jan'=>120, 'Feb'=>98])
+$heuresMensuelles = $dashboardData['heures_mensuelles'] ?? [];
+
+// Données JS
+$dashboardCharts = [
+    'heures_labels' => array_keys($heuresMensuelles),
+    'heures_values' => array_values($heuresMensuelles),
+    'presence' => [$presentsToday, $absentsToday],
+    'retards' => [$retardsToday, max(0, $presentsToday - $retardsToday)]
+];
+
 
 // Extraction des données pour les vues avec valeurs par défaut
 $stats = $dashboardData['stats'] ?? [];
@@ -106,99 +123,150 @@ $additionalCSS = ['assets/css/admin.css'];
 <?php include 'partials/header.php'; ?>
 <?php include 'src/views/partials/sidebar_canonique.php'; ?>
 
-<div class="row">
-    <div class="container-fluid p-0">
-        <div class="row g-0 flex-nowrap" style="min-height:100vh;">
-            <!-- Main Content -->
-            <main class="main-content">
-                <?php if ($highlightSearch): ?>
-                <div class="alert alert-info alert-dismissible fade show mt-3" role="alert">
+<div class="container-fluid p-0">
+    <div class="row g-0 flex-nowrap" style="min-height:100vh;">
+
+        <!-- ===================== -->
+        <!-- MAIN CONTENT -->
+        <!-- ===================== -->
+        <main class="main-content flex-fill px-3 py-3" style="background:#f8f9fc;">
+
+            <!-- 🔍 Message recherche -->
+            <?php if (!empty($highlightSearch)): ?>
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
                     <i class="fas fa-search me-2"></i>
-                    <strong>Recherche :</strong> "<?= htmlspecialchars($searchTerm) ?>" - Résultats mis en évidence dans les tableaux
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <strong>Recherche :</strong>
+                    "<?= htmlspecialchars($searchTerm) ?>"
+                    <span class="ms-1 text-muted">
+                        (résultats surlignés dans les tableaux)
+                    </span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-                <?php endif; ?>
-                
-                <div id="dashboard" class="panel-section">
-                <div class="dashboard-header card shadow-sm mb-4 p-4 bg-white rounded-4 border-0" style="margin-top: 0 !important;">
-                    
-                    <!-- Cards statistiques RH connectées à la base -->
-                    <div class="row g-1 mb-2" style="margin-bottom:15px !important; margin-top:15px !important;">
-                        <div class="col-md-6 col-lg-3">
-                            <div class="card stat-card total h-100" style="border-radius: 8px; min-height: 50px; background: rgba(67,97,238,0.18); box-shadow: 0 1px 4px rgba(67,97,238,0.08); margin-bottom:10px;">
-                                <div class="card-body text-center py-2 px-1">
-                                    <div class="mb-1">
-                                        <i class="fas fa-users" style="font-size:1.3rem;color:#0672e4;"></i>
-                                    </div>
-                                    <div class="stat-count fw-bold" style="font-size:1.3rem;color:#0672e4;" id="count-employes"><?= $stats['total_employes'] ?></div>
-                                    <div class="text-primary" style="font-size:0.85rem;opacity:0.8;">Total employés</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3">
-                            <div class="card stat-card approuve h-100" style="border-radius: 8px; min-height: 50px; background: rgba(76,201,240,0.18); box-shadow: 0 1px 4px rgba(76,201,240,0.08); margin-bottom:10px;">
-                                <div class="card-body text-center py-2 px-1">
-                                    <div class="mb-1">
-                                        <i class="fas fa-user-check" style="font-size:1.3rem;color:#4cc9f0;"></i>
-                                    </div>
-                                    <div class="stat-count fw-bold" style="font-size:1.3rem;color:#4cc9f0;" id="count-presents"><?= $stats['present_today'] ?></div>
-                                    <div class="text-info" style="font-size:0.85rem;opacity:0.8;">Présents aujourd'hui</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3">
-                            <div class="card stat-card en_attente h-100" style="border-radius: 8px; min-height: 50px; background: rgba(248,150,30,0.18); box-shadow: 0 1px 4px rgba(248,150,30,0.08); margin-bottom:10px;">
-                                <div class="card-body text-center py-2 px-1">
-                                    <div class="mb-1">
-                                        <i class="fas fa-user-times" style="font-size:1.3rem;color:#f8961e;"></i>
-                                    </div>
-                                    <div class="stat-count fw-bold" style="font-size:1.3rem;color:#f8961e;" id="count-absents"><?= $stats['absents_today'] ?></div>
-                                    <div class="text-warning" style="font-size:0.85rem;opacity:0.8;">Absents aujourd'hui</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3">
-                            <div class="card stat-card rejete h-100" style="border-radius: 8px; min-height: 50px; background: rgba(249,65,68,0.18); box-shadow: 0 1px 4px rgba(249,65,68,0.08); margin-bottom:10px;">
-                                <div class="card-body text-center py-2 px-1">
-                                    <div class="mb-1">
-                                        <i class="fas fa-clock" style="font-size:1.3rem;color:#f94144;"></i>
-                                    </div>
-                                    <div class="stat-count fw-bold" style="font-size:1.3rem;color:#f94144;" id="count-retards"><?= $stats['retards_today'] ?></div>
-                                    <div class="text-danger" style="font-size:0.85rem;opacity:0.8;">Retards du jour</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <?php endif; ?>
 
-                    </div>
-                    </div>
+            <!-- ===================== -->
+            <!-- DASHBOARD -->
+            <!-- ===================== -->
+            <section id="dashboard" class="panel-section">
 
-                    <!-- PANELS DYNAMIQUES -->
-                    <div class="dashboard-content" style="margin-top:15px;">
-                        
-                        <!-- Panel Pointage -->
+                <!-- ===================== -->
+                <!-- CARTES STATISTIQUES -->
+                <!-- ===================== -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4">
+                    <div class="card-body p-3">
+
+                        <div class="row g-3">
+
+                            <!-- Total employés -->
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card h-100 border-0 shadow-sm"
+                                     style="background:rgba(67,97,238,.15);border-radius:14px;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-users mb-2"
+                                           style="font-size:1.6rem;color:#4361ee;"></i>
+                                        <h3 class="fw-bold mb-0" style="color:#4361ee;">
+                                            <?= (int)$stats['total_employes'] ?>
+                                        </h3>
+                                        <small class="text-primary opacity-75">
+                                            Total employés
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Présents -->
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card h-100 border-0 shadow-sm"
+                                     style="background:rgba(76,201,240,.18);border-radius:14px;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-user-check mb-2"
+                                           style="font-size:1.6rem;color:#4cc9f0;"></i>
+                                        <h3 class="fw-bold mb-0" style="color:#4cc9f0;">
+                                            <?= (int)$stats['present_today'] ?>
+                                        </h3>
+                                        <small class="text-info opacity-75">
+                                            Présents aujourd’hui
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Absents -->
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card h-100 border-0 shadow-sm"
+                                     style="background:rgba(248,150,30,.18);border-radius:14px;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-user-times mb-2"
+                                           style="font-size:1.6rem;color:#f8961e;"></i>
+                                        <h3 class="fw-bold mb-0" style="color:#f8961e;">
+                                            <?= (int)$stats['absents_today'] ?>
+                                        </h3>
+                                        <small class="text-warning opacity-75">
+                                            Absents aujourd’hui
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Retards -->
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card h-100 border-0 shadow-sm"
+                                     style="background:rgba(249,65,68,.18);border-radius:14px;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-clock mb-2"
+                                           style="font-size:1.6rem;color:#f94144;"></i>
+                                        <h3 class="fw-bold mb-0" style="color:#f94144;">
+                                            <?= (int)$stats['retards_today'] ?>
+                                        </h3>
+                                        <small class="text-danger opacity-75">
+                                            Retards du jour
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- PANELS DYNAMIQUES -->
+                <!-- ===================== -->
+                <div class="dashboard-content">
+
+                    <div class="mb-4">
                         <?php include 'src/views/pages/panel_pointage.php'; ?>
-                        
-                        <!-- Panel Heures -->
+                    </div>
+
+                    <div class="mb-4">
                         <?php include 'src/views/pages/panel_heures.php'; ?>
-                        
-                        <!-- Panel Demandes -->
+                    </div>
+
+                    <div class="mb-4">
                         <?php include 'src/views/pages/panel_demandes.php'; ?>
-                        
-                        <!-- Panel Employés -->
+                    </div>
+
+                    <div class="mb-4">
                         <?php include 'src/views/pages/panel_employes.php'; ?>
-                        
-                        <!-- Panel Admins -->
+                    </div>
+
+                    <div class="mb-4">
                         <?php include 'src/views/pages/panel_admins.php'; ?>
-                        
-                        <!-- Panel Retards -->
+                    </div>
+
+                    <div class="mb-4">
                         <?php include 'src/views/pages/panel_retards.php'; ?>
-                        
-                        <!-- Panel Calendrier -->
-                        <div id="calendrier" class="panel-section" style="display:none;">
-                            <div class="container my-4">
-                                <div class="filter-card shadow-sm p-4 mb-4">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    </div>
+
+                </div>
+            </section>
+    
+
+                    <!-- Panel Calendrier -->
+                    <div id="calendrier" class="panel-section" style="display:none;">
+                        <div class="container my-4">
+                            <div class="filter-card shadow-sm p-4 mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
                                         <h4 class="mb-0">Calendrier des événements</h4>
                                         <button type="button" class="btn btn-primary btn-sm" id="addEventBtn">
                                             <i class="fas fa-plus me-1"></i> Ajouter un événement

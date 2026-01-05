@@ -7,6 +7,11 @@
 // Chargement des constantes
 require_once __DIR__ . '/constants.php';
 
+// Démarrer la session si nécessaire ✅
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 // Chargement de la connexion à la base de données
 require_once __DIR__ . '/db.php';
 

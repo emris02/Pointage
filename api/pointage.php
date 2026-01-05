@@ -128,7 +128,7 @@ class PointageSystem {
                         'reason' => 'already_pointed_today',
                         'message' => 'Vous avez déjà utilisé ce badge pour un pointage aujourd\'hui',
                         'badge_token_id' => $badgeTokenId,
-                        'employee_id' => $employeId,
+                        'employe_id' => $employeId,
                         'timestamp' => date('Y-m-d H:i:s')
                     ];
                 } else {
@@ -160,7 +160,7 @@ class PointageSystem {
                     'status' => 'duplicate',
                     'reason' => 'same_type_consecutive',
                     'message' => 'Pointage du même type déjà enregistré. Vérifiez vos pointages.',
-                    'employee_id' => $employeId,
+                    'employe_id' => $employeId,
                     'timestamp' => date('Y-m-d H:i:s')
                 ];
             }

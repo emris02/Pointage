@@ -52,10 +52,10 @@ class Employee {
             d.name as department_name,
             d.manager_id,
             COUNT(DISTINCT p.id) as total_clockings,
-            AVG(TIME_TO_SEC(p.worked_hours)) as avg_daily_hours
+            0 as avg_daily_hours
         FROM employees e
         LEFT JOIN departments d ON e.department = d.code
-        LEFT JOIN pointages p ON e.id = p.employee_id AND p.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        LEFT JOIN pointages p ON e.id = p.employe_id AND p.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         WHERE e.id = ? AND e.status = 'active'
         GROUP BY e.id";
         
@@ -148,7 +148,7 @@ class Employee {
             MAX(p.created_at) as last_clocking
         FROM employees e
         LEFT JOIN departments d ON e.department = d.code
-        LEFT JOIN pointages p ON e.id = p.employee_id
+        LEFT JOIN pointages p ON e.id = p.employe_id
         WHERE $whereClause
         GROUP BY e.id
         ORDER BY e.last_name, e.first_name
@@ -216,12 +216,12 @@ class Employee {
         $sql = "SELECT 
             COUNT(DISTINCT DATE(created_at)) as working_days,
             COUNT(*) as total_clockings,
-            AVG(TIME_TO_SEC(worked_hours)) as avg_daily_seconds,
-            SUM(TIME_TO_SEC(worked_hours)) as total_seconds,
+            0 as avg_daily_seconds,
+            0 as total_seconds,
             SUM(CASE WHEN is_late = 1 THEN 1 ELSE 0 END) as late_arrivals,
             SUM(CASE WHEN overtime_hours > 0 THEN TIME_TO_SEC(overtime_hours) ELSE 0 END) as overtime_seconds
         FROM pointages 
-        WHERE employee_id = ? 
+        WHERE employe_id = ? 
         AND created_at >= $dateCondition
         AND type = 'departure'";
         

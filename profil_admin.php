@@ -341,11 +341,11 @@ include 'src/views/partials/sidebar_canonique.php';
                                 <i class="fas fa-circle me-2 text-muted"></i> Statut
                             </div>
                             <div class="info-value">
-                                <span class="badge badge-active badge-clickable" 
+                                <span id="admin-statut" class="badge <?= $admin['statut'] === 'actif' ? 'badge-active' : 'badge-inactive' ?> badge-clickable" 
                                       data-bs-toggle="modal" 
                                       data-bs-target="#badgeModal"
-                                      data-badge-type="active">
-                                    <i class="fas fa-check-circle me-1"></i> Actif
+                                      data-badge-type="<?= $admin['statut'] === 'actif' ? 'active' : 'limited-access' ?>">
+                                    <i class="fas fa-check-circle me-1"></i> <?= htmlspecialchars(ucfirst($admin['statut'])) ?>
                                 </span>
                             </div>
                         </div>
@@ -390,28 +390,41 @@ include 'src/views/partials/sidebar_canonique.php';
                 </div>
                 <div class="card-body">
                     <div class="quick-actions">
-                        <button class="btn btn-outline-primary w-100 mb-2" onclick="showEditModal()">
+                        <button class="btn btn-outline-primary w-100 mb-2" id="btn-edit-admin" onclick="showEditModal()">
                             <i class="fas fa-edit me-2"></i> Modifier le profil
                         </button>
                         
-                        <button class="btn btn-outline-warning w-100 mb-2" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                        <button class="btn btn-outline-warning w-100 mb-2" id="btn-change-password" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                             <i class="fas fa-key me-2"></i> Changer le mot de passe
                         </button>
                         
-                        <a href="admin_dashboard_unifie.php#employes" class="btn btn-outline-success w-100 mb-2">
+                        <a href="admin_dashboard_unifie.php#employes" id="btn-manage-employees" class="btn btn-outline-success w-100 mb-2">
                             <i class="fas fa-users me-2"></i> Gérer les employés
                         </a>
                         
-                        <a href="admin_dashboard_unifie.php#demandes" class="btn btn-outline-info w-100 mb-2">
+                        <a href="admin_dashboard_unifie.php#demandes" id="btn-view-requests" class="btn btn-outline-info w-100 mb-2">
                             <i class="fas fa-clipboard-list me-2"></i> Voir les demandes
                         </a>
                         
+                        <button class="btn btn-outline-secondary w-100 mb-2" id="btn-show-badge">
+                            <i class="fas fa-qrcode me-2"></i> Afficher le badge
+                        </button>
+
                         <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
-                            <button class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <button class="btn btn-outline-danger w-100 mb-2" id="btn-deactivate-admin" data-bs-toggle="modal" data-bs-target="#deleteModal">
                                 <i class="fas fa-user-slash me-2"></i> Désactiver le compte
                             </button>
+
+                            <!-- Activer et Supprimer (visibles uniquement lorsque le compte est inactif) -->
+                            <button class="btn btn-outline-success w-100 mb-2" id="btn-activate-admin" style="display:none">
+                                <i class="fas fa-user-check me-2"></i> Activer le compte
+                            </button>
+
+                            <button class="btn btn-danger w-100 mb-2" id="btn-delete-admin" style="display:none" data-bs-toggle="modal" data-bs-target="#deleteModalPermanent">
+                                <i class="fas fa-trash-alt me-2"></i> Supprimer définitivement
+                            </button>
                         <?php endif; ?>
-                    </div>
+                    </div> 
                 </div>
             </div>
         </div>
@@ -701,9 +714,46 @@ include 'src/views/partials/sidebar_canonique.php';
 </div>
 <?php endif; ?>
 
+<!-- Hidden forms for activate and delete actions -->
+<form id="activateForm" action="activate_admin.php" method="POST" style="display:none">
+    <input type="hidden" name="admin_id" value="<?= $admin['id'] ?>">
+</form>
+
+<!-- Modal : Supprimer définitivement -->
+<?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
+<div class="modal fade" id="deleteModalPermanent" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i> Supprimer définitivement</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading">Suppression définitive</h6>
+                    <p>Cette action supprimera définitivement l'administrateur et toutes ses données associées. Cette opération est irréversible.</p>
+                </div>
+                <form action="supprimer_admin_def.php" method="POST" id="permanentDeleteForm">
+                    <input type="hidden" name="admin_id" value="<?= $admin['id'] ?>">
+                    <div class="mb-3">
+                        <label for="confirmText" class="form-label">Tapez <strong>SUPPRIMER</strong> pour confirmer</label>
+                        <input type="text" id="confirmText" name="confirm_text" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="permanentDeleteForm" class="btn btn-danger">Supprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
 // Configuration
@@ -711,7 +761,9 @@ const ADMIN_PROFILE = {
     isEditingOwn: <?= $is_editing_own ? 'true' : 'false' ?>,
     isSuperAdmin: <?= $is_super_admin ? 'true' : 'false' ?>,
     adminName: "<?= addslashes($admin['prenom'] . ' ' . $admin['nom']) ?>",
-    adminRole: "<?= $admin['role'] ?>"
+    adminRole: "<?= $admin['role'] ?>",
+    adminId: <?= (int)$admin['id'] ?>,
+    adminStatut: "<?= $admin['statut'] ?>"
 };
 
 // Données des badges
@@ -789,19 +841,139 @@ document.addEventListener('DOMContentLoaded', function() {
     initBadgesSystem();
     initModals();
     initPasswordStrength();
-    initAnimations();
+    animateCards(); // Correction : la fonction existe bien
 });
 
 // Fonctions principales
 function initAdminProfile() {
-    // Animation des cartes
-    animateCards();
-    
-    // Initialiser les interactions
-    initInteractions();
-    
-    // Mettre à jour les indicateurs
-    updateRealTimeStats();
+        animateCards();
+        // Initialiser les interactions
+        initInteractions();
+        updateAdminActionButtons();
+        // Mettre à jour les indicateurs en charge
+        updateRealTimeStats();
+} 
+
+// Affichage dynamique des boutons selon le statut admin
+function updateAdminActionButtons() {
+        const btnDeactivate = document.getElementById('btn-deactivate-admin');
+        const btnActivate = document.getElementById('btn-activate-admin');
+        const btnDelete = document.getElementById('btn-delete-admin');
+        const btnShowBadge = document.getElementById('btn-show-badge');
+        // Prefer the canonical status from the CONFIG (adminStatut), fallback to DOM text
+        let statut = typeof ADMIN_PROFILE.adminStatut === 'string' ? ADMIN_PROFILE.adminStatut.toLowerCase() : null;
+        if (!statut) {
+            statut = document.getElementById('admin-statut')?.textContent?.trim().toLowerCase();
+        }
+        if (!statut) return;
+
+        if (statut === 'inactif') {
+                if (btnDeactivate) btnDeactivate.style.display = 'none';
+                if (btnActivate) btnActivate.style.display = '';
+                if (btnDelete) btnDelete.style.display = '';
+                // Désactiver les autres actions
+                setProfileInteractivity(false);
+        } else {
+                if (btnDeactivate) btnDeactivate.style.display = '';
+                if (btnActivate) btnActivate.style.display = 'none';
+                if (btnDelete) btnDelete.style.display = 'none';
+                // Réactiver les actions
+                setProfileInteractivity(true);
+        }
+        if (btnShowBadge) btnShowBadge.style.display = '';
+}
+
+// Affichage du badge QR dans un modal
+function showAdminBadgeModal(badge) {
+        // badge: { token, token_hash, expires_at, can_regenerate }
+        const hasQRious = typeof QRious !== 'undefined';
+        const qrImgHtml = hasQRious ? `<img id="admin-badge-qr" alt="QR Code Admin" style="max-width:250px;" />` :
+            `<img id="admin-badge-qr" src="https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=${encodeURIComponent(badge.token)}" alt="QR Code Admin" style="max-width:250px;" />`;
+
+        const regenBtnHtml = badge.can_regenerate ? `<button id="regen-badge-btn" class="btn btn-sm btn-outline-primary">Régénérer le badge</button>` : '';
+
+        const modalHtml = `
+        <div class="modal fade" id="modalBadgeAdmin" tabindex="-1" aria-labelledby="modalBadgeAdminLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalBadgeAdminLabel">Badge d'accès Administrateur</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        ${qrImgHtml}
+                        <p class="mt-3">Présentez ce badge à la borne pour pointer vos heures d'arrivée et de départ.</p>
+                        <p class="small text-muted">Exp: ${badge.expires_at || '—'}</p>
+                        <p class="small text-break">Token hash: <code id="badge-token-hash">${badge.token_hash || '—'}</code></p>
+                        <div class="mt-2">${regenBtnHtml} <button id="copy-token-btn" class="btn btn-sm btn-outline-secondary">Copier le token</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        let modalDiv = document.getElementById('modalBadgeAdmin');
+        if (modalDiv) modalDiv.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // If QRious available, render data URL
+        if (hasQRious && badge.token) {
+            try {
+                const qr = new QRious({ value: badge.token, size: 300 });
+                const img = document.getElementById('admin-badge-qr');
+                img.src = qr.toDataURL();
+            } catch (e) {
+                console.warn('QR generation failed', e);
+            }
+        }
+
+        // Copy token
+        const copyBtn = document.getElementById('copy-token-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                if (!badge.token) return showNotification('warning', 'Token non disponible');
+                navigator.clipboard.writeText(badge.token).then(() => {
+                    showNotification('success', 'Token copié dans le presse-papier');
+                }).catch(() => showNotification('error', 'Impossible de copier le token'));
+            });
+        }
+
+        // Regenerate
+        const regenBtn = document.getElementById('regen-badge-btn');
+        if (regenBtn) {
+            regenBtn.addEventListener('click', async function() {
+                if (!confirm('Générer un nouveau badge pour cet administrateur ?')) return;
+                try {
+                    const form = new FormData();
+                    form.append('action', 'regenerate');
+                    form.append('admin_id', ADMIN_PROFILE.adminId);
+                    const resp = await fetch('admin_badge_api.php', { method: 'POST', body: form });
+                    const data = await resp.json();
+                    if (data.status === 'success' && data.token) {
+                        showNotification('success', 'Badge régénéré');
+                        // Update modal with new qr
+                        const img = document.getElementById('admin-badge-qr');
+                        const tokenHashEl = document.getElementById('badge-token-hash');
+                        if (img) {
+                            if (typeof QRious !== 'undefined') {
+                                const qr2 = new QRious({ value: data.token, size: 300 });
+                                img.src = qr2.toDataURL();
+                            } else {
+                                img.src = `https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=${encodeURIComponent(data.token)}`;
+                            }
+                        }
+                        if (tokenHashEl) tokenHashEl.textContent = data.token_hash || '—';
+                    } else {
+                        showNotification('error', 'Impossible de régénérer le badge');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showNotification('error', 'Erreur lors de la régénération');
+                }
+            });
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalBadgeAdmin'));
+        modal.show();
 }
 
 // Système de badges
@@ -1082,6 +1254,179 @@ function showNotification(type, message, title = 'Notification') {
     });
 }
 
+// Utility: show a "Compte désactivé" notification
+function showAccountDisabled() {
+    showNotification('error', 'Compte désactivé. Cette action n\'est pas autorisée.', 'Compte désactivé');
+}
+
+// Enable or disable profile actions (hover allowed but clicks blocked when disabled)
+function setProfileInteractivity(enabled) {
+    const quickActions = document.querySelector('.quick-actions');
+    if (!quickActions) return;
+
+    // Elements that should remain clickable even when account is inactive
+    const allowedIds = ['btn-activate-admin', 'btn-delete-admin', 'btn-show-badge'];
+
+    // Select all actionable child buttons and anchors
+    const elems = quickActions.querySelectorAll('button, a');
+    elems.forEach(el => {
+        const id = el.id || '';
+        const shouldAllow = allowedIds.includes(id);
+
+        if (!enabled && !shouldAllow) {
+            el.classList.add('disabled-clickable');
+            // Prevent default clicks and show message
+            if (!el._disabledHandler) {
+                el.addEventListener('click', el._disabledHandler = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showAccountDisabled();
+                });
+            }
+        } else {
+            el.classList.remove('disabled-clickable');
+            if (el._disabledHandler) {
+                el.removeEventListener('click', el._disabledHandler);
+                delete el._disabledHandler;
+            }
+        }
+    });
+}
+
+// Hook up special buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Show badge
+    const showBadgeBtn = document.getElementById('btn-show-badge');
+    if (showBadgeBtn) {
+        showBadgeBtn.addEventListener('click', async function() {
+            if (ADMIN_PROFILE.adminStatut === 'inactif') return showAccountDisabled();
+            try {
+                const res = await fetch(`admin_badge_api.php?id=${ADMIN_PROFILE.adminId}`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    const badge = {
+                        token: data.token?.token || null,
+                        token_hash: data.token?.token_hash || null,
+                        expires_at: data.token?.expires_at || null,
+                        can_regenerate: data.admin?.can_regenerate || false
+                    };
+                    if (badge.token) {
+                        showAdminBadgeModal(badge);
+                        return;
+                    }
+
+                    if (badge.can_regenerate) {
+                        if (confirm('Aucun badge actif. Générer un nouveau badge d\'accès maintenant ?')) {
+                            const form = new FormData();
+                            form.append('action', 'regenerate');
+                            form.append('admin_id', ADMIN_PROFILE.adminId);
+
+                            const regenRes = await fetch('admin_badge_api.php', { method: 'POST', body: form });
+                            const regenData = await regenRes.json();
+                            if (regenData.status === 'success' && regenData.token) {
+                                const regenBadge = { token: regenData.token, token_hash: regenData.token_hash || null, expires_at: regenData.expires_at || null, can_regenerate: true };
+                                showAdminBadgeModal(regenBadge);
+                            } else {
+                                showNotification('error', 'Impossible de générer le badge', 'Erreur');
+                            }
+                        }
+                        return;
+                    }
+                }
+
+
+                showNotification('warning', 'Badge non disponible', 'Information');
+            } catch (e) {
+                console.error(e);
+                showNotification('error', 'Impossible de récupérer le badge', 'Erreur');
+            }
+        });
+    }
+
+    // Activate (AJAX)
+    const activateBtn = document.getElementById('btn-activate-admin');
+    if (activateBtn) {
+        activateBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (!confirm('Confirmer l\'activation de ce compte administrateur ?')) return;
+            try {
+                const form = new FormData();
+                form.append('admin_id', ADMIN_PROFILE.adminId);
+                const resp = await fetch('activate_admin.php', { method: 'POST', body: form, redirect: 'follow' });
+                // The backend redirects back with ?success=admin_activated on success
+                if (resp.ok && resp.url && resp.url.indexOf('success=admin_activated') !== -1) {
+                    ADMIN_PROFILE.adminStatut = 'actif';
+                    const statutEl = document.getElementById('admin-statut');
+                    if (statutEl) {
+                        statutEl.classList.remove('badge-inactive');
+                        statutEl.classList.add('badge-active');
+                        statutEl.innerHTML = '<i class="fas fa-check-circle me-1"></i> Actif';
+                    }
+                    updateAdminActionButtons();
+                    showNotification('success', 'Compte activé', 'Succès');
+                } else {
+                    showNotification('error', 'Impossible d\'activer le compte', 'Erreur');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('error', 'Erreur réseau', 'Erreur');
+            }
+        });
+    }
+
+    // Deactivate (AJAX)
+    const deactivateForm = document.getElementById('deactivateForm');
+    if (deactivateForm) {
+        deactivateForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(deactivateForm);
+            try {
+                const resp = await fetch('deactivate_admin.php', { method: 'POST', body: formData, redirect: 'follow' });
+                if (resp.ok && resp.url && resp.url.indexOf('success=admin_deactivated') !== -1) {
+                    ADMIN_PROFILE.adminStatut = 'inactif';
+                    const statutEl = document.getElementById('admin-statut');
+                    if (statutEl) {
+                        statutEl.classList.remove('badge-active');
+                        statutEl.classList.add('badge-inactive');
+                        statutEl.innerHTML = '<i class="fas fa-check-circle me-1"></i> Inactif';
+                    }
+                    // Close modal
+                    const deleteModalEl = document.getElementById('deleteModal');
+                    const bsModal = bootstrap.Modal.getInstance(deleteModalEl);
+                    if (bsModal) bsModal.hide();
+                    updateAdminActionButtons();
+                    showNotification('success', 'Compte désactivé', 'Succès');
+                } else {
+                    showNotification('error', 'Impossible de désactiver le compte', 'Erreur');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('error', 'Erreur réseau', 'Erreur');
+            }
+        });
+    }
+
+    // When the deactivate/activate visibility changes, enforce interactivity on load
+    setTimeout(() => {
+        // Initial enforcement based on statut
+        updateAdminActionButtons();
+    }, 50);
+
+    // Guard badge-clickable global behavior when account is inactive
+    document.querySelectorAll('.badge-clickable').forEach(b => {
+        b.addEventListener('click', function(e) {
+            if (ADMIN_PROFILE.adminStatut === 'inactif') {
+                e.preventDefault();
+                e.stopPropagation();
+                showAccountDisabled();
+            }
+        });
+    });
+});
+
+
+
 // Gestion des états de chargement pour les formulaires
 document.addEventListener('submit', function(e) {
     const form = e.target;
@@ -1114,7 +1459,7 @@ document.addEventListener('submit', function(e) {
     /* use central page background variable so theme controls canvas appearance */
     background: var(--page-bg-gradient, var(--page-bg)) !important;
     min-height: 100vh;
-    padding: 2rem;
+    padding: 0.5rem;
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -1298,7 +1643,7 @@ document.addEventListener('submit', function(e) {
 }
 
 .admin-profile-card .card-body {
-    padding: 1.5rem;
+    padding: 0.5rem;
 }
 
 /* Grille d'informations */
@@ -1405,7 +1750,7 @@ document.addEventListener('submit', function(e) {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
+    padding: 0.5rem;
     background: #f8fafc;
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
@@ -1516,7 +1861,7 @@ document.addEventListener('submit', function(e) {
 /* Responsive */
 @media (max-width: 992px) {
     .admin-profile-container {
-        padding: 1.5rem;
+        padding: 0.5rem;
     }
     
     .admin-avatar-initials {
@@ -1543,7 +1888,7 @@ document.addEventListener('submit', function(e) {
 
 @media (max-width: 768px) {
     .admin-profile-container {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .admin-profile-header .d-flex {
@@ -1553,7 +1898,7 @@ document.addEventListener('submit', function(e) {
     }
     
     .admin-profile-card .card-body {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .account-info .info-item {
@@ -1620,6 +1965,30 @@ document.addEventListener('submit', function(e) {
         background: #7f8c8d
         color: #f1f5f9;
     }
+}
+
+/* Disabled action (hover allowed but not clickable) */
+.disabled-action {
+    opacity: 0.85;
+}
+.disabled-action .btn,
+.disabled-action a {
+    pointer-events: auto; /* keep hover */
+}
+.disabled-action .btn.disabled-clickable,
+.disabled-action a.disabled-clickable {
+    cursor: default;
+}
+
+/* Classe pour gérer les éléments non cliquables (tooltip-style) */
+.disabled-clickable {
+    pointer-events: auto;
+    cursor: default !important;
+    opacity: 0.9;
+}
+
+
+
     
     .admin-profile-card {
         background: #2c3e50;

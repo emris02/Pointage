@@ -217,7 +217,7 @@
 
         .btn.active {
             background-color: #0d6efd !important;
-            color: white !important;
+            color: white 
             border-color: #0d6efd !important;
         }
 
@@ -269,7 +269,7 @@
         .empty-state {
             background-color: #f8f9fa;
             border-radius: 0.35rem;
-            padding: 2rem;
+            padding: 0.5rem;
             text-align: center;
         }
         
@@ -326,7 +326,7 @@
         .empty-state {
             background-color: #f8f9fa;
             border-radius: 0.35rem;
-            padding: 2rem;
+            padding: 0.5rem;
             text-align: center;
         }
         

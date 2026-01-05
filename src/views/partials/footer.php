@@ -373,7 +373,7 @@
 .newsletter-section {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
-    padding: 2rem;
+    padding: 0.5rem;
     margin: 2rem 0 3rem;
 }
 
@@ -535,7 +535,7 @@
     transform: translateX(-50%) translateY(100px);
     background: white;
     border-radius: 10px;
-    padding: 1.5rem;
+    padding: 0.5rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     max-width: 500px;
     width: 90%;
@@ -619,7 +619,7 @@
     }
     
     .newsletter-section {
-        padding: 1.5rem;
+        padding: 0.5rem;
     }
     
     .cookie-consent {

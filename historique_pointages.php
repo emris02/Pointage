@@ -71,7 +71,7 @@ $pointages = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <style>
         body {
             background-color: #f9f9f9;
-            padding: 2rem;
+            padding: 0.5rem;
         }
         h2 {
             text-align: center;
@@ -198,7 +198,7 @@ $pointages = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <style>
         body {
             background-color: #f9f9f9;
-            padding: 2rem;
+            padding: 0.5rem;
         }
         h2 {
             text-align: center;

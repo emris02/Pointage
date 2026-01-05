@@ -87,7 +87,7 @@ export async function sendJustification({ employe_id, scan_time, late_time, reas
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                employee_id: employe_id,
+                employe_id: employe_id,
                 scan_time,
                 late_time,
                 reason,

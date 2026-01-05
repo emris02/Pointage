@@ -82,7 +82,8 @@ class Employe {
             if ($key === 'password' && !empty($value)) {
                 $fields[] = "$key = ?";
                 $values[] = password_hash($value, PASSWORD_DEFAULT);
-            } elseif (in_array($key, ['nom','prenom','poste','email','email_pro','telephone','photo','infos_sup'])) {
+            } elseif (in_array($key, ['nom','prenom','poste','email','email_pro','telephone','photo','infos_sup','statut'])) {
+                // Allow updating statut (actif/inactif) like admins
                 $fields[] = "$key = ?";
                 $values[] = $value;
             }
@@ -135,11 +136,12 @@ class Employe {
         $stmt = $this->db->prepare("
             SELECT 
                 COUNT(*) as total_pointages,
-                COUNT(CASE WHEN type = 'arrivee' THEN 1 END) as arrivees,
-                COUNT(CASE WHEN type = 'depart' THEN 1 END) as departs
+                SUM(type = 'arrivee') as arrivees,
+                SUM(type = 'depart') as departs,
+                SUM(CASE WHEN retard_minutes > 0 THEN 1 ELSE 0 END) as retards
             FROM pointages 
             WHERE employe_id = ? 
-            AND DATE(created_at) = CURDATE()
+            AND DATE(date_heure) = CURDATE()
         ");
         $stmt->execute([$id]);
         return $stmt->fetch() ?: [];

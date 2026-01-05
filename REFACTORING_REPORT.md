@@ -33,6 +33,10 @@ require_once __DIR__ . '/../../config/bootstrap.php';
 **Problème :** Requêtes SQL éparpillées dans les vues
 **Solution :** Service centralisé `AdminService` avec méthodes dédiées
 
+### 4. Duplicate declaration of Pointage model
+**Problème :** Fatal error `Cannot declare class PointagePro\Models\Pointage, because the name is already in use` caused by recursive includes / autoloader interaction when creating a global alias in `src/models/Pointage.php`.
+**Solution :** Added a guard around the namespaced class declaration (`if (!class_exists(__NAMESPACE__ . '\\Pointage', false)) { ... }`) and replaced the legacy `class ... extends ... {}` alias with a safe `class_alias('PointagePro\\Models\\Pointage', 'Pointage', false)` guarded by `class_exists(..., false)`, preventing autoload recursion and duplicate declarations.
+
 ## Architecture mise en place
 
 ### Service Centralisé

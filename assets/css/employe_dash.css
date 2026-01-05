@@ -958,7 +958,7 @@
     background: var(--primary-light);
     border-radius: 8px;
     margin-bottom: 0.5rem;
-    padding: 1rem !important;
+    padding: 0.5rem !important;
 }
 
 .dropdown-header h6 {
@@ -1134,7 +1134,7 @@
 
 @media (max-width: 991.98px) {
     .main-content-container {
-        /* padding: 1rem; */
+        /* padding: 0.5rem; */
         min-height: calc(100vh - 70px);
     }
 }
@@ -1236,7 +1236,7 @@
 }
 
 .badge-info-modal {
-    padding: 1rem 0;
+    padding: 0.5rem 0;
 }
 
 .employee-name {
@@ -1337,7 +1337,7 @@
         flex-direction: column;
         text-align: center;
         gap: 1rem;
-        padding: 1.5rem;
+        padding: 0.5rem;
     }
     
     .stat-icon {
@@ -1371,7 +1371,7 @@
     .info-item {
         flex-direction: column;
         text-align: center;
-        padding: 1.5rem;
+        padding: 0.5rem;
     }
     
     .info-icon {
@@ -1397,7 +1397,7 @@
     .detail-item {
         flex-direction: column;
         text-align: center;
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .detail-icon {
@@ -1605,9 +1605,9 @@
 .p-0 { padding: 0; }
 .p-1 { padding: 0.25rem; }
 .p-2 { padding: 0.5rem; }
-.p-3 { padding: 1rem; }
-.p-4 { padding: 1.5rem; }
-.p-5 { padding: 2rem; }
+.p-3 { padding: 0.5rem; }
+.p-4 { padding: 0.5rem; }
+.p-5 { padding: 0.5rem; }
 
 .rounded { border-radius: var(--border-radius); }
 .rounded-sm { border-radius: var(--border-radius-sm); }

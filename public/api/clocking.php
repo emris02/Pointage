@@ -75,7 +75,7 @@ try {
         : "Échec de pointage: {$result['error']}";
     
     logSystemEvent($db, $logLevel, $logMessage, [
-        'employee_id' => $result['employee']['id'] ?? null,
+        'employe_id' => $result['employee']['id'] ?? null,
         'type' => $result['type'] ?? null,
         'ip_address' => $context['ip_address'],
         'user_agent' => $context['user_agent']

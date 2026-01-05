@@ -85,6 +85,15 @@ $userFirstName = isset($_SESSION['prenom']) ? htmlspecialchars($_SESSION['prenom
                 </div>
             </a>
 
+            <!-- Pause / Chrono (visible pour les utilisateurs authentifiés) -->
+            <div class="d-flex align-items-center me-3">
+                <button id="pauseToggleBtn" class="btn btn-sm btn-outline-secondary me-2 d-flex align-items-center" title="Pause" aria-pressed="false">
+                    <i id="pauseIcon" class="fas fa-pause me-1"></i>
+                    <span id="pauseLabel" class="d-none d-md-inline">Pause</span>
+                </button>
+                <div id="workTimer" class="small text-muted">00:00:00</div>
+            </div>
+
             <!-- Dropdown Utilisateur - Bootstrap -->
             <div class="dropdown">
                 <button class="btn user-dropdown-btn d-flex align-items-center" 
@@ -301,6 +310,111 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<script>
+// Pause / chrono global - contrôle minimal pour afficher le timer et démarrer/arrêter les pauses
+document.addEventListener('DOMContentLoaded', function() {
+    const pauseBtn = document.getElementById('pauseToggleBtn');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const workTimer = document.getElementById('workTimer');
+    let timerInterval = null;
+    let timerStartAt = null;
+
+    function formatTime(seconds) {
+        const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+        const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    function startTimerFrom(isoDateTime) {
+        if (!isoDateTime) return;
+        timerStartAt = new Date(isoDateTime).getTime();
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            const now = Date.now();
+            const elapsed = Math.max(0, Math.floor((now - timerStartAt) / 1000));
+            workTimer.textContent = formatTime(elapsed);
+        }, 1000);
+    }
+
+    async function initWorkTimer() {
+        try {
+            const resp = await fetch('api/get_pointages_jour.php');
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (!data.success) return;
+            const stats = data.stats || {};
+            if ((stats.arrivees || 0) > 0 && (stats.departs || 0) === 0) {
+                // récupérer la première arrivée
+                let firstArrivee = null;
+                const pointages = data.pointages || {};
+                for (const day in pointages) {
+                    for (const p of pointages[day]) {
+                        if (p.type === 'arrivee') { firstArrivee = p.date_heure; break; }
+                    }
+                    if (firstArrivee) break;
+                }
+                if (firstArrivee) startTimerFrom(firstArrivee);
+            }
+
+            // vérifier si pause active
+            const pauseResp = await fetch('api/toggle_pause.php');
+            if (pauseResp.ok) {
+                const pr = await pauseResp.json();
+                if (pr.success && pr.active) {
+                    pauseBtn.classList.add('active');
+                    pauseIcon.classList.remove('fa-pause');
+                    pauseIcon.classList.add('fa-play');
+                }
+            }
+        } catch (e) {
+            console.warn('Impossible d\'initialiser le chrono:', e);
+        }
+    }
+
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', async (ev) => {
+            ev.preventDefault();
+            try {
+                const statusResp = await fetch('api/toggle_pause.php');
+                if (!statusResp.ok) throw new Error('Erreur statut pause');
+                const status = await statusResp.json();
+                if (status.success && status.active) {
+                    // terminer la pause
+                    const form = new FormData();
+                    const resp = await fetch('api/toggle_pause.php', { method: 'POST', body: form });
+                    const r = await resp.json();
+                    if (r.success) {
+                        pauseBtn.classList.remove('active');
+                        pauseIcon.classList.remove('fa-play');
+                        pauseIcon.classList.add('fa-pause');
+                    }
+                } else {
+                    const allowed = ['dejeuner','course','fatigue','malaise','commission','autre'];
+                    let type = prompt('Type de pause (dejeuner, course, fatigue, malaise, commission, autre) :', 'dejeuner');
+                    if (!type) return; type = type.toLowerCase();
+                    if (!allowed.includes(type)) { alert('Type invalide'); return; }
+                    const form = new FormData();
+                    form.append('pause_type', type);
+                    const resp = await fetch('api/toggle_pause.php', { method: 'POST', body: form });
+                    const r = await resp.json();
+                    if (r.success) {
+                        pauseBtn.classList.add('active');
+                        pauseIcon.classList.remove('fa-pause');
+                        pauseIcon.classList.add('fa-play');
+                    }
+                }
+            } catch (err) {
+                console.error('Erreur pause:', err);
+                alert('Erreur lors du changement de pause');
+            }
+        });
+    }
+
+    initWorkTimer();
+});
+</script>
+
 <style>
 /* =======================================================
    VARIABLES GLOBALES
@@ -477,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
     background: var(--primary-light);
     border-radius: 8px;
     margin-bottom: 0.5rem;
-    padding: 1rem !important;
+    padding: 0.5rem !important;
 }
 
 .dropdown-header h6 {
@@ -648,13 +762,13 @@ document.addEventListener('DOMContentLoaded', function() {
 ======================================================= */
 .main-content-container {
     min-height: calc(100vh - 70px);
-    padding: 1.5rem;
+    padding: 0.5rem;
     background: var(--light);
 }
 
 @media (max-width: 991.98px) {
     .main-content-container {
-        padding: 1rem;
+        padding: 0.5rem;
         min-height: calc(100vh - 70px);
     }
 }

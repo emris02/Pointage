@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function() {
     background: var(--primary-light);
     border-radius: 8px;
     margin-bottom: 0.5rem;
-    padding: 1rem !important;
+    padding: 0.5rem !important;
 }
 
 .dropdown-header h6 {
@@ -646,13 +646,13 @@ document.addEventListener('DOMContentLoaded', function() {
 ======================================================= */
 .main-content-container {
     min-height: calc(100vh - 70px);
-    padding: 1.5rem;
+    padding: 0.5rem;
     background: var(--light);
 }
 
 @media (max-width: 991.98px) {
     .main-content-container {
-        padding: 1rem;
+        padding: 0.5rem;
         min-height: calc(100vh - 70px);
     }
 }

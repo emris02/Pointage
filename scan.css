@@ -24,7 +24,7 @@ body {
 .scan-header {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
-    padding: 1.5rem;
+    padding: 0.5rem;
     text-align: center;
 }
 
@@ -44,7 +44,7 @@ body {
 }
 
 .scan-status {
-    padding: 1rem;
+    padding: 0.5rem;
     margin: 1rem auto;
     border-radius: 8px;
     text-align: center;
@@ -117,6 +117,6 @@ body {
     }
     
     .scan-header {
-        padding: 1rem;
+        padding: 0.5rem;
     }
 }
