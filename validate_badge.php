@@ -25,6 +25,18 @@ class PointageService {
      * Traite un pointage en validant le token puis en enregistrant l'arrivée ou le départ
      */
     public function traiterPointage(string $token): array {
+        // Prefer BadgeManager flow if available (supports admin tokens)
+        if (class_exists('BadgeManager') && method_exists('BadgeManager', 'verifyToken')) {
+            $tokenData = 
+                call_user_func(['BadgeManager', 'verifyToken'], $token, $this->pdo);
+            $userType = $tokenData['user_type'] ?? 'employe';
+            $userId = (int)($tokenData['user_id'] ?? 0);
+            $tokenId = (int)($tokenData['id'] ?? 0);
+
+            return $this->enregistrerPointageGeneric($userType, $userId, $tokenId);
+        }
+
+        // Fallback legacy flow
         $this->validerTokenStructure($token);
 
         [$employe_id, $timestamp, $signature] = explode('|', $token);
@@ -97,24 +109,58 @@ class PointageService {
         }
     }
 
-    private function determinerTypePointage(int $employe_id): string {
+    /**
+     * Version générique supportant admin et employé
+     */
+    private function enregistrerPointageGeneric(string $userType, int $userId, int $tokenId = 0): array {
+        $this->pdo->beginTransaction();
+
+        try {
+            if ($tokenId) {
+                $stmt = $this->pdo->prepare("UPDATE badge_tokens SET used_at = NOW() WHERE id = ?");
+                $stmt->execute([$tokenId]);
+            }
+
+            $type = $this->determinerTypePointage($userId, $userType);
+
+            if ($type === 'arrivee') {
+                $result = $this->enregistrerArrivee($userId, $userType);
+            } else {
+                $result = $this->enregistrerDepart($userId, $userType);
+            }
+
+            $this->pdo->commit();
+
+            return $result;
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    private function determinerTypePointage(int $userId, string $userType = 'employe'): string {
         $current_date = date('Y-m-d');
-        $stmt = $this->pdo->prepare("SELECT type FROM pointages WHERE employe_id = ? AND DATE(date_heure) = ? ORDER BY date_heure DESC LIMIT 1");
-        $stmt->execute([$employe_id, $current_date]);
+        $idField = $userType === 'admin' ? 'admin_id' : 'employe_id';
+        $stmt = $this->pdo->prepare("SELECT type FROM pointages WHERE $idField = ? AND DATE(date_heure) = ? ORDER BY date_heure DESC LIMIT 1");
+        $stmt->execute([$userId, $current_date]);
         $last = $stmt->fetch();
 
         return (!$last || $last['type'] === 'depart') ? 'arrivee' : 'depart';
     }
 
-    private function enregistrerArrivee(int $employe_id): array {
+    private function enregistrerArrivee(int $userId, string $userType = 'employe'): array {
         $current_time = date('Y-m-d H:i:s');
         $limite = strtotime(date('Y-m-d') . ' 09:00:00');
         $retard = strtotime($current_time) > $limite;
 
-        $stmt = $this->pdo->prepare("INSERT INTO pointages (date_heure, employe_id, type, retard_justifie, retard_cause) VALUES (?, ?, 'arrivee', ?, ?)");
+        $sql = $userType === 'admin'
+            ? "INSERT INTO pointages (date_heure, admin_id, type, retard_justifie, retard_cause) VALUES (?, ?, 'arrivee', ?, ?)"
+            : "INSERT INTO pointages (date_heure, employe_id, type, retard_justifie, retard_cause) VALUES (?, ?, 'arrivee', ?, ?)";
+
+        $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
             $current_time,
-            $employe_id,
+            $userId,
             $retard ? 'non' : null,
             $retard ? 'Arrivée après 09h00' : null,
         ]);
@@ -127,13 +173,15 @@ class PointageService {
         ];
     }
 
-    private function enregistrerDepart(int $employe_id): array {
+    private function enregistrerDepart(int $userId, string $userType = 'employe'): array {
         $current_date = date('Y-m-d');
         $current_time = date('Y-m-d H:i:s');
 
+        $idField = $userType === 'admin' ? 'admin_id' : 'employe_id';
+
         // Vérifier qu'une arrivée existe
-        $stmt = $this->pdo->prepare("SELECT date_heure FROM pointages WHERE employe_id = ? AND DATE(date_heure) = ? AND type = 'arrivee' ORDER BY date_heure DESC LIMIT 1");
-        $stmt->execute([$employe_id, $current_date]);
+        $stmt = $this->pdo->prepare("SELECT date_heure FROM pointages WHERE $idField = ? AND DATE(date_heure) = ? AND type = 'arrivee' ORDER BY date_heure DESC LIMIT 1");
+        $stmt->execute([$userId, $current_date]);
         $last = $stmt->fetch();
 
         if (!$last) {
@@ -149,8 +197,12 @@ class PointageService {
         $seconds -= $pause;
         $temps_total = gmdate('H:i:s', $seconds);
 
-        $stmt = $this->pdo->prepare("INSERT INTO pointages (date_heure, employe_id, type, temps_total) VALUES (?, ?, 'depart', ?)");
-        $stmt->execute([$current_time, $employe_id, $temps_total]);
+        $sql = $userType === 'admin'
+            ? "INSERT INTO pointages (date_heure, admin_id, type, temps_total) VALUES (?, ?, 'depart', ?)"
+            : "INSERT INTO pointages (date_heure, employe_id, type, temps_total) VALUES (?, ?, 'depart', ?)";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$current_time, $userId, $temps_total]);
 
         return [
             'status' => 'success',

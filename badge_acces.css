@@ -160,7 +160,7 @@ body {
 
 .info-card {
     background: var(--light);
-    padding: 1rem;
+    padding: 0.5rem;
     border-radius: var(--border-radius);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     transition: all 0.2s ease;
@@ -189,7 +189,7 @@ body {
 .qr-section {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: 0.5rem;
     text-align: center;
     margin: 1.5rem 0;
     border: 1px dashed #cbd5e1;
@@ -330,7 +330,7 @@ body {
 
 .footer {
     text-align: center;
-    padding: 1rem;
+    padding: 0.5rem;
     color: var(--gray);
     font-size: 0.8rem;
     margin-top: auto;
@@ -462,7 +462,7 @@ body {
     }
     
     .qr-section {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .qr-container {

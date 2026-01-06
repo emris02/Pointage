@@ -212,17 +212,14 @@
                 </li>
             </ul>
         </div>
-
-    </div>
-</div>
-
-<?php else: ?>
+        <?php else: ?>
 
     <div class="alert alert-info mt-4 shadow-sm">
         <i class="fas fa-info-circle me-2"></i>
         Aucun pointage trouvé pour les filtres sélectionnés.
     </div>
 
-<?php endif; ?>
+    <?php endif; ?>
 
+    </div>
 </div>

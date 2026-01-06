@@ -257,6 +257,31 @@ class PointageController
 
             return $rows;
         }
+
+        /**
+         * Calcule la durée (en secondes) entre deux timestamps de pointage pour un employé, en soustrayant les pauses.
+         * Si $to est null, on estime jusqu'à maintenant.
+         */
+        public function getDurationBetween(int $employeId, string $from, ?string $to = null): array {
+            $fromDt = new DateTime($from);
+            $toDt = $to ? new DateTime($to) : new DateTime();
+
+            $start = $fromDt->format('Y-m-d H:i:s');
+            $end = $toDt->format('Y-m-d H:i:s');
+
+            $total = $toDt->getTimestamp() - $fromDt->getTimestamp();
+            if ($total < 0) $total = 0;
+
+            $breaks = $this->pointageModel->getBreakDurationBetween($employeId, $start, $end);
+            $worked = max(0, $total - (int)$breaks);
+
+            return [
+                'seconds' => (int)$worked,
+                'formatted' => gmdate('H:i:s', (int)$worked),
+                'start' => $start,
+                'end' => $end
+            ];
+        }
     /**
      * Génère un rapport de pointages
      */

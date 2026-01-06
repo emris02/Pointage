@@ -204,7 +204,16 @@ if ($isAdmin) {
             <div class="profile-avatar-wrapper position-relative">
                 <?php 
                 // Déterminer la source de l'image, fallback si vide ou fichier inexistant
-                $avatarSrc = !empty($employe['photo']) ? $employe['photo'] : 'assets/img/profil.jpg';
+                if (!empty($employe['photo'])) {
+                    // Use the safe image proxy when photo path is in uploads
+                    if (strpos($employe['photo'], 'uploads/') !== false) {
+                        $avatarSrc = dirname($_SERVER['SCRIPT_NAME']) . '/image.php?f=' . urlencode(basename($employe['photo']));
+                    } else {
+                        $avatarSrc = $employe['photo'];
+                    }
+                } else {
+                    $avatarSrc = 'assets/img/profil.jpg';
+                }
                 ?>
                 <img src="<?= htmlspecialchars($avatarSrc) ?>" 
                     alt="<?= htmlspecialchars($employe['prenom'] ?? 'Employé') ?>" 
@@ -267,29 +276,7 @@ if ($isAdmin) {
                 </a>
                 
                 <?php if (!empty($isAdmin)): ?>
-                <div class="dropdown">
-                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-cog me-1"></i> Actions
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                <i class="fas fa-edit me-2"></i> Modifier le profil
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
-                                <i class="fas fa-key me-2"></i> Réinitialiser mot de passe
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                <i class="fas fa-trash me-2"></i> Supprimer l'employé
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                    <!-- Actions moved to the central action card below -->
                 <?php endif; ?>
             </div>
         </div>
@@ -587,6 +574,13 @@ if ($isAdmin) {
                                                     </div>
                                                     <div class="activity-time">
                                                         <?= date('H:i', strtotime($pointage['date_heure'])) ?>
+                                                        <?php if (!empty($pointage['duration_formatted'])): ?>
+                                                            <div class="text-muted small">Durée: <span class="duration-text"><?= htmlspecialchars($pointage['duration_formatted']) ?></span>
+                                                            <?php if (!empty($pointage['ongoing'])): ?>
+                                                                <span class="badge bg-success ms-1">En cours</span>
+                                                                <div><small>Temps écoulé: <span class="live-timer" data-start="<?= htmlspecialchars($pointage['date_heure']) ?>" data-initial-seconds="<?= (int)($pointage['duration_seconds'] ?? 0) ?>">--:--:--</span></small></div>
+                                                            <?php endif; ?></div>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                                 <div class="activity-meta">
@@ -620,6 +614,41 @@ if ($isAdmin) {
                                     </p>
                                 </div>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action card (centrée entre Badge et Stats) -->
+            <div class="row mt-3">
+                <div class="col-lg-4 offset-lg-4 col-md-8 offset-md-2">
+                    <div class="card profile-card action-card text-center shadow-sm">
+                        <div class="card-body">
+                            <h6 class="mb-3">Actions administratives</h6>
+                            <p class="text-muted small mb-3">Effectuez rapidement des actions sur le compte de cet employé</p>
+                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                <a href="modifier_employe.php?id=<?= $employe['id'] ?>" class="btn btn-outline-primary btn-lg">
+                                    <i class="fas fa-edit me-1"></i> Modifier
+                                </a>
+
+                                <button class="btn btn-secondary btn-lg" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                                    <i class="fas fa-key me-1"></i> Réinitialiser
+                                </button>
+
+                                <?php if (($employe['statut'] ?? '') === 'actif'): ?>
+                                    <button id="btn-deactivate-employee" class="btn btn-warning btn-lg">
+                                        <i class="fas fa-user-slash me-1"></i> Désactiver
+                                    </button>
+                                <?php else: ?>
+                                    <button id="btn-activate-employee" class="btn btn-success btn-lg">
+                                        <i class="fas fa-user-check me-1"></i> Activer
+                                    </button>
+                                <?php endif; ?>
+
+                                <button id="btn-delete-inline" class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                    <i class="fas fa-trash me-1"></i> Supprimer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -692,6 +721,28 @@ if ($isAdmin) {
         </div>
     </main>
 </div>
+
+<script>
+// Live timers for ongoing sessions
+function pad(n){return n<10? '0'+n : n}
+function updateTimers(){
+    document.querySelectorAll('.live-timer').forEach(function(el){
+        const start = el.dataset.start;
+        const initial = parseInt(el.dataset.initialSeconds || '0', 10);
+        const startTs = Date.parse(start)/1000;
+        if (!isNaN(startTs)){
+            const now = Math.floor(Date.now()/1000);
+            const secs = Math.max(0, initial + (now - startTs));
+            const h = Math.floor(secs/3600);
+            const m = Math.floor((secs%3600)/60);
+            const s = secs%60;
+            el.textContent = pad(h)+":"+pad(m)+":"+pad(s);
+        }
+    });
+}
+setInterval(updateTimers, 1000);
+updateTimers();
+</script>
 
 <!-- Modals -->
 <!-- Modal Badge -->
@@ -995,7 +1046,175 @@ function initInteractions() {
             modal.show();
         });
     }
+
+    // Profile actions: activation / deactivation / suppression
+    const btnActivate = document.getElementById('btn-activate-employee');
+    const btnDeactivate = document.getElementById('btn-deactivate-employee');
+    const deleteEmployeeBtn = document.getElementById('deleteEmployeeBtn');
+    const confirmDelete = document.getElementById('confirmDelete');
+
+    function updateStatusUI(isActive) {
+        // avatar status
+        const avatar = document.querySelector('.avatar-status');
+        if (avatar) {
+            avatar.classList.toggle('status-online', isActive);
+            avatar.classList.toggle('status-offline', !isActive);
+        }
+
+        // Update dropdown actions to show correct toggle
+        const actionContainer = document.querySelector('.profile-actions');
+        if (!actionContainer) return;
+        const existingActivate = document.getElementById('btn-activate-employee');
+        const existingDeactivate = document.getElementById('btn-deactivate-employee');
+
+        if (isActive) {
+            if (existingActivate) existingActivate.remove();
+            if (!existingDeactivate) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-warning';
+                btn.id = 'btn-deactivate-employee';
+                btn.innerHTML = '<i class="fas fa-user-slash me-1"></i> Désactiver';
+                btn.dataset.id = PROFILE_CONFIG.employeId;
+                actionContainer.insertBefore(btn, actionContainer.querySelector('.dropdown'));
+                btn.addEventListener('click', handleDeactivate);
+            }
+        } else {
+            if (existingDeactivate) existingDeactivate.remove();
+            if (!existingActivate) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-success';
+                btn.id = 'btn-activate-employee';
+                btn.innerHTML = '<i class="fas fa-user-check me-1"></i> Activer';
+                btn.dataset.id = PROFILE_CONFIG.employeId;
+                actionContainer.insertBefore(btn, actionContainer.querySelector('.dropdown'));
+                btn.addEventListener('click', handleActivate);
+            }
+        }
+    }
+
+    async function handleActivate(e) {
+        e.preventDefault();
+        const confirm = await Swal.fire({
+            title: 'Activer l\'employé ?',
+            text: 'L\'employé pourra à nouveau se connecter et être pointé.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Oui, activer'
+        });
+        if (!confirm.isConfirmed) return;
+
+        try {
+            const resp = await fetch('activate_employe.php', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ employe_id: PROFILE_CONFIG.employeId })
+            });
+            if (!resp.ok) {
+                const txt = await resp.text();
+                Swal.fire({ title: 'Erreur', text: txt || 'Erreur serveur', icon: 'error' });
+                return;
+            }
+            let json;
+            try {
+                json = await resp.json();
+            } catch (parseErr) {
+                Swal.fire({ title: 'Erreur', text: 'Réponse inattendue du serveur', icon: 'error' });
+                return;
+            }
+
+            if (json.success) {
+                Swal.fire({ title: 'Activé', text: json.message || 'Employé activé', icon: 'success', timer: 1800, showConfirmButton: false });
+                updateStatusUI(true);
+            } else {
+                Swal.fire({ title: 'Erreur', text: json.message || 'Impossible d\'activer', icon: 'error' });
+            }
+        } catch (err) {
+            Swal.fire({ title: 'Erreur', text: 'Erreur réseau ou serveur', icon: 'error' });
+        }
+    }
+
+    async function handleDeactivate(e) {
+        e.preventDefault();
+        const confirm = await Swal.fire({
+            title: 'Désactiver l\'employé ?',
+            text: 'L\'employé ne pourra plus se connecter ni être pointé.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Oui, désactiver'
+        });
+        if (!confirm.isConfirmed) return;
+
+        try {
+            const resp = await fetch('deactivate_employe.php', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ employe_id: PROFILE_CONFIG.employeId })
+            });
+            if (!resp.ok) {
+                const txt = await resp.text();
+                Swal.fire({ title: 'Erreur', text: txt || 'Erreur serveur', icon: 'error' });
+                return;
+            }
+            let json;
+            try {
+                json = await resp.json();
+            } catch (parseErr) {
+                Swal.fire({ title: 'Erreur', text: 'Réponse inattendue du serveur', icon: 'error' });
+                return;
+            }
+
+            if (json.success) {
+                Swal.fire({ title: 'Désactivé', text: json.message || 'Employé désactivé', icon: 'success', timer: 1800, showConfirmButton: false });
+                updateStatusUI(false);
+            } else {
+                Swal.fire({ title: 'Erreur', text: json.message || 'Impossible de désactiver', icon: 'error' });
+            }
+        } catch (err) {
+            Swal.fire({ title: 'Erreur', text: 'Erreur réseau ou serveur', icon: 'error' });
+        }
+    }
+
+    // Bind buttons if they exist
+    if (btnActivate) btnActivate.addEventListener('click', handleActivate);
+    if (btnDeactivate) btnDeactivate.addEventListener('click', handleDeactivate);
+
+    // Delete: enable/disable button based on the confirmation checkbox
+    if (confirmDelete && deleteEmployeeBtn) {
+        confirmDelete.addEventListener('change', function() {
+            deleteEmployeeBtn.disabled = !this.checked;
+        });
+
+        deleteEmployeeBtn.addEventListener('click', async function() {
+            const conf = await Swal.fire({
+                title: 'Supprimer définitivement ?',
+                text: `Supprimer ${PROFILE_CONFIG.employeName} ? Cette action est irréversible.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, supprimer'
+            });
+            if (!conf.isConfirmed) return;
+
+            try {
+                const resp = await fetch('api/delete_employe.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ id: PROFILE_CONFIG.employeId })
+                });
+                const json = await resp.json();
+                if (json.success) {
+                    Swal.fire({ title: 'Supprimé', text: json.message || 'Employé supprimé', icon: 'success', timer: 1500, showConfirmButton: false });
+                    // Redirect to admin list after a short delay
+                    setTimeout(() => { window.location.href = 'admin_dashboard_unifie.php?success=employe_deleted'; }, 1000);
+                } else {
+                    Swal.fire({ title: 'Erreur', text: json.message || 'Impossible de supprimer', icon: 'error' });
+                }
+            } catch (err) {
+                Swal.fire({ title: 'Erreur', text: 'Erreur réseau ou serveur', icon: 'error' });
+            }
+        });
+    }
 }
+
 
 function initBadgeTimer() {
     if (!PROFILE_CONFIG.badgeExpiresAt) return;

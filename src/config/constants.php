@@ -4,7 +4,6 @@
  */
 
 // Configuration de session
- //
 date_default_timezone_set('Africa/Bamako');
 
 // Constantes de sécurité
@@ -21,7 +20,7 @@ define('DEBUG', true);
 // Constantes de l'application
 define('APP_NAME', 'Pointage Xpert Pro');
 define('APP_VERSION', '2.0.0');
-define('APP_URL', 'http://localhost/Pointage');
+define('APP_URL', 'http://localhost/pointage');
 
 // Constantes de rôles
 define('ROLE_SUPER_ADMIN', 'super_admin');

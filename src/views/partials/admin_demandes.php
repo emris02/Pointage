@@ -169,17 +169,29 @@ $stats = $pdo->query("
     <!-- Custom CSS -->
     <style>
         :root {
-            --primary-color: #0672e4;
-            --secondary-color: #3f37c9;
-            --success-color: #4cc9f0;
-            --warning-color: #f72585;
-            --danger-color: #7209b7;
-            --light-color: #f8f9fa;
-            --dark-color: #212529;
-            --border-radius: 12px;
-            --box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --transition: all 0.3s ease;
-        }
+        --primary: #0672e4;
+        --primary-dark: #3a56d4;
+        --primary-light: #6b8aff;
+        --secondary: #0672e4;
+        --accent: #4cc9f0;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --light: #f8fafc;
+        --dark: #1e293b;
+        --text: #ffff;
+        --text-light: #64748b;
+        --white: #ffff;
+        --gradient: linear-gradient(135deg, #2078e9 0%, #0672e4 100%);
+        --gradient-light: linear-gradient(135deg, #0672e4 0%, #0672e4 100%);
+        
+        --radius: 16px;
+        --radius-lg: 24px;
+        --shadow: 0 8px 32px rgba(67, 97, 238, 0.15);
+        --shadow-lg: 0 20px 40px rgba(67, 97, 238, 0.25);
+        --shadow-hover: 0 25px 50px rgba(67, 97, 238, 0.3);
+        --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
         
         body {
             background-color: #f5f7fb;

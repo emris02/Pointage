@@ -1,11 +1,11 @@
 <?php
 /**
- * ==========================================
+ * 
  *  HELPERS - NOTIFICATIONS ADMIN
  *  Fichier : helpers/admin_notification.php
  *  Auteur : Moha
  *  Description : Liste et gestion des notifications pour les administrateurs
- * ==========================================
+ * 
  */
 
 require_once __DIR__ . '/../config/boostrap.php'; // 🔗 Connexion DB

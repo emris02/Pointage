@@ -1,11 +1,11 @@
-/* =====================================================
+/* ====
    NOUVEAU DESIGN PROFIL - SIMPLE ET CENTRÉ
    Version autonome avec responsive intégré
-===================================================== */
+==== */
 
-/* =====================================================
+/* ====
    🔒 ISOLATION ET RÉINITIALISATION
-===================================================== */
+==== */
 
 /* Isolation complète du profil pour éviter les conflits */
 .profile-page-wrapper {
@@ -54,9 +54,9 @@
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-/* =====================================================
+/* ====
    📱 RESPONSIVE INTÉGRÉ (basé sur responsive.css)
-===================================================== */
+==== */
 
 /* Layout principal avec sidebar */
 body.has-sidebar .profile-page-wrapper {
@@ -152,7 +152,7 @@ body.has-sidebar .profile-page-wrapper {
 .profile-header-section {
     background: linear-gradient(135deg, var(--primary-color) 0%, #1d4ed8 100%);
     color: white;
-    padding: 2rem 0;
+    padding: 0.5rem 0;
     margin-bottom: 2rem;
 }
 
@@ -231,11 +231,11 @@ body.has-sidebar .profile-page-wrapper {
 .card-header {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
     border: none;
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1.5rem;
 }
 
 .card-body {
-    padding: 1.5rem;
+    padding: 0.5rem;
 }
 
 /* Informations personnelles */
@@ -292,7 +292,7 @@ body.has-sidebar .profile-page-wrapper {
 
 .no-badge-section {
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 0.5rem 1rem;
 }
 
 .no-badge-section i {
@@ -366,7 +366,7 @@ body.has-sidebar .profile-page-wrapper {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
+    padding: 0.5rem;
     background: rgba(248, 250, 252, 0.8);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
@@ -472,7 +472,7 @@ body.has-sidebar .profile-page-wrapper {
     }
     
     .card-body {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .profile-actions {
@@ -507,9 +507,9 @@ body.has-sidebar .profile-page-wrapper {
     outline-offset: 2px;
 }
 
-/* =====================================================
+/* ====
    🎨 STYLES BOOTSTRAP OVERRIDE (isolation complète)
-===================================================== */
+==== */
 
 /* Reset Bootstrap pour le profil */
 .profile-page-wrapper .container-fluid {
@@ -550,12 +550,12 @@ body.has-sidebar .profile-page-wrapper {
     color: white;
     border: none;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1.5rem;
     font-weight: 600;
 }
 
 .profile-page-wrapper .card-body {
-    padding: 1.5rem;
+    padding: 0.5rem;
 }
 
 .profile-page-wrapper .btn {
@@ -607,7 +607,7 @@ body.has-sidebar .profile-page-wrapper {
 .profile-page-wrapper .alert {
     border: none;
     border-radius: var(--radius-md);
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1.5rem;
     margin-bottom: 1.5rem;
     font-weight: 500;
 }
@@ -644,9 +644,9 @@ body.has-sidebar .profile-page-wrapper {
     color: var(--dark-color) !important;
 }
 
-/* =====================================================
+/* ====
    🌙 MODE SOMBRE
-===================================================== */
+==== */
 
 @media (prefers-color-scheme: dark) {
     .profile-page-wrapper {
@@ -684,9 +684,9 @@ body.has-sidebar .profile-page-wrapper {
     }
 }
 
-/* =====================================================
+/* ====
    ♿ ACCESSIBILITÉ ET PERFORMANCE
-===================================================== */
+==== */
 
 /* Focus visible amélioré */
 .profile-page-wrapper .btn:focus-visible,

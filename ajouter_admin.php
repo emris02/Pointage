@@ -101,7 +101,7 @@ $additionalCSS = ['assets/css/admin.css'];
 <?php include 'partials/header.php'; ?>
 <?php include 'src/views/partials/sidebar_canonique.php'; ?>
 
-<div class="main-content" style="margin-left: 250px; padding: 20px; width: calc(100% - 250px);">
+<div class="main-content" style="margin-left: 206px;padding: 10px;width: calc(100% - 170px);">
     <div class="container mt-4 mx-auto" style="max-width: 1400px;">
         <!-- Header -->
         <div class="row mb-4">

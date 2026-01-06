@@ -56,33 +56,4 @@ try {
 
     // Handle file upload if present ('piece_jointe')
     $fichierPath = null;
-    if (isset($_FILES['piece_jointe']) && $_FILES['piece_jointe']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = __DIR__ . '/../uploads/justifications/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-        $fileName = uniqid() . '_' . basename($_FILES['piece_jointe']['name']);
-        $dest = $uploadDir . $fileName;
-        if (!move_uploaded_file($_FILES['piece_jointe']['tmp_name'], $dest)) {
-            // Move failed but we continue; log
-            error_log('justifier_retard: failed to move uploaded file');
-        } else {
-            $fichierPath = 'uploads/justifications/' . $fileName;
-        }
-    }
-
-    // Insert into retards
-    $stmt = $pdo->prepare("INSERT INTO retards (pointage_id, employe_id, raison, details, fichier_justificatif, statut, date_soumission) VALUES (?, ?, ?, ?, ?, 'en_attente', NOW())");
-    $stmt->execute([$pointageId, $employeId, $raison, $details, $fichierPath]);
-    $insertedId = $pdo->lastInsertId();
-
-    // Log and respond
-    error_log('[API] Retard justifié via API: pointage=' . $pointageId . ' employe=' . $employeId . ' raison=' . $raison);
-
-    echo json_encode(['success' => true, 'message' => 'Justification saved', 'retard_id' => $insertedId]);
-    exit();
-
-} catch (Exception $e) {
-    error_log('justifier_retard error: ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Internal server error']);
-    exit();
 }

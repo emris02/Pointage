@@ -74,7 +74,7 @@ class BadgeController {
         try {
             $stmt = $this->pdo->prepare("
                 UPDATE badge_tokens 
-                SET status = 'inactive' 
+                SET status = 'revoked' 
                 WHERE employe_id = ? 
                 AND status = 'active'
             ");

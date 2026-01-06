@@ -168,11 +168,13 @@ class EmployeController {
         
         $stats = $this->employeModel->getStats($id);
         $workHours = $this->pointageModel->calculateWorkHours($id, date('Y-m-d'));
+        $monthlySummary = $this->pointageModel->getEmployeeMonthlySummary($id);
         
         return [
             'employe' => $employe,
             'pointages' => $stats,
-            'work_hours_today' => $workHours
+            'work_hours_today' => $workHours,
+            'monthly_summary' => $monthlySummary
         ];
     }
     

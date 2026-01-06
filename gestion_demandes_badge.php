@@ -175,8 +175,6 @@ $stats = $pdo->query("
 ")->fetch(PDO::FETCH_ASSOC);
 
 $departements = $pdo->query("SELECT DISTINCT departement FROM employes WHERE departement IS NOT NULL ORDER BY departement")->fetchAll(PDO::FETCH_COLUMN);
-=======
-<?php
  //
 require 'db.php';
 

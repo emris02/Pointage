@@ -192,10 +192,15 @@
                         </small>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <div class="input-group input-group-sm" style="max-width: 200px;">
+                        <div class="input-group input-group-sm" style="max-width: 320px;">
                             <span class="input-group-text">
                                 <i class="fas fa-calendar-alt"></i>
                             </span>
+                            <select id="range-filter" class="form-select" aria-label="Période">
+                                <option value="day">Jour</option>
+                                <option value="week" selected>Semaine</option>
+                                <option value="month">Mois</option>
+                            </select>
                             <input type="date" id="date-filter" class="form-control" value="<?= date('Y-m-d') ?>">
                         </div>
                         <button id="refresh-history" class="btn btn-sm btn-outline-primary">

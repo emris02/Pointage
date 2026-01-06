@@ -14,6 +14,7 @@ class AdvancedBadgeScanner {
         this.switchCameraBtn = document.getElementById('switch-camera');
         this.toggleFlashBtn = document.getElementById('toggle-flash');
         this.dateFilter = document.getElementById('date-filter');
+        this.rangeFilter = document.getElementById('range-filter');
         this.refreshHistoryBtn = document.getElementById('refresh-history');
         
         // Variables d'état
@@ -38,7 +39,7 @@ class AdvancedBadgeScanner {
             justifyDelay: appBase + '/api/justifier_retard.php'
         };
         
-        console.log('Endpoints API configurés:', this.apiEndpoints);
+        console.debug('Endpoints API configurés:', this.apiEndpoints);
         
         // Configuration du scanner
         this.scannerConfig = {
@@ -74,6 +75,8 @@ class AdvancedBadgeScanner {
             
             // Bind events et setup
             this.bindEvents();
+            // Apply initial UI state for range (disable date input if not 'day')
+            this.updateDateInputState();
             this.setupKeyboardShortcuts();
             this.setupPerformanceMonitoring();
             
@@ -250,7 +253,7 @@ class AdvancedBadgeScanner {
     async loadAvailableCameras() {
         try {
             this.cameras = await QrScanner.listCameras(true);
-            console.log(`${this.cameras.length} caméra(s) détectée(s):`, this.cameras);
+            console.debug(`${this.cameras.length} caméra(s) détectée(s):`, this.cameras);
             
             if (this.cameras.length === 0) {
                 throw new Error('Aucune caméra détectée sur cet appareil');
@@ -487,7 +490,6 @@ class AdvancedBadgeScanner {
         const payload = {
             badge_data: badgeData.raw_token,
             scan_time: new Date().toISOString(),
-            type: this.determinePointageType(),
             device_info: this.getDeviceInfo()
         };
         
@@ -515,10 +517,10 @@ class AdvancedBadgeScanner {
             const text = await response.text();
             let result;
             
-            // Debug logging
-            console.log('Status:', response.status);
-            console.log('Content-Type:', contentType);
-            console.log('Response text (first 500 chars):', text.substring(0, 500));
+            // Debug logging (reduced to debug level)
+            console.debug('Status:', response.status);
+            console.debug('Content-Type:', contentType);
+            console.debug('Response text (first 500 chars):', text.substring(0, 500));
             
             try {
                 if (contentType.includes('application/json')) {
@@ -551,10 +553,11 @@ class AdvancedBadgeScanner {
             }
             
             if (!response.ok) {
-                const errorMsg = result?.message || 
-                               result?.error || 
-                               `Erreur HTTP ${response.status}`;
-                throw new Error(errorMsg);
+                // Try to extract a server-provided message/code
+                const errorMsg = result?.message || result?.error || `Erreur HTTP ${response.status}`;
+                const errorCode = result?.code || null;
+                // Provide more context in the UI rather than dumping raw stack traces
+                throw Object.assign(new Error(errorMsg), { code: errorCode });
             }
             
             if (!result.success) {
@@ -621,14 +624,16 @@ class AdvancedBadgeScanner {
             heure: new Date().toLocaleTimeString('fr-FR'),
             date: new Date().toLocaleDateString('fr-FR'),
             statut: 'success',
-            details: result.details || ''
+            details: result.details || '',
+            accountType: result.data?.user_type || 'employe',
+            role: result.data?.role || null
         });
         
         // Recharger les pointages du jour
         await this.loadPointagesJour();
         
-        // Gestion des retards
-        if (result.retard === true || result.is_late) {
+        // Gestion des retards et départs précoces (demande de justification)
+        if (result.retard === true || result.is_late || result.needs_justification === true || result.code === 'NEED_JUSTIFICATION') {
             setTimeout(() => this.showJustificationModal(badgeData, result, true), 2000);
         }
         
@@ -648,9 +653,12 @@ class AdvancedBadgeScanner {
                 <div class="result-content">
                     <h5>Pointage réussi</h5>
                     ${data.nom ? `<p><strong>${data.prenom} ${data.nom}</strong></p>` : ''}
-                    ${data.type ? `<p>Type: <span class="badge bg-primary">${data.type}</span></p>` : ''}
+                    ${data.user_type ? `<p>Compte: <span class="badge ${data.user_type === 'admin' ? 'bg-warning text-dark' : 'bg-secondary'}">${data.user_type === 'admin' ? (data.role ? (data.role === 'super_admin' ? 'Super Administrateur' : 'Administrateur') : 'Administrateur') : 'Employé'}</span></p>` : ''}
+                    ${data.type ? `<p>Type pointage: <span class="badge bg-primary">${data.type}</span></p>` : ''}
                     ${data.heure ? `<p>Heure: ${data.heure}</p>` : ''}
                     ${data.retard_minutes ? `<p class="text-warning">Retard: ${data.retard_minutes} min</p>` : ''}
+                    ${data.employe?.arrivee_time ? `<p class="small text-muted">Arrivée aujourd'hui: ${data.employe.arrivee_time}</p>` : ''}
+                    ${data.employe?.depart_time ? `<p class="small text-muted">Départ aujourd'hui: ${data.employe.depart_time}</p>` : ''}
                 </div>
                 <button class="btn-close-result">
                     <i class="fas fa-times"></i>
@@ -693,6 +701,7 @@ class AdvancedBadgeScanner {
             minute: '2-digit' 
         });
         
+        const acctLabel = event.accountType === 'admin' ? (event.role === 'super_admin' ? 'Super Admin' : 'Admin') : 'Employé';
         const eventHtml = `
             <div class="pointage-item p-3 border-bottom animate__animated animate__fadeIn">
                 <div class="d-flex align-items-center">
@@ -704,7 +713,7 @@ class AdvancedBadgeScanner {
                             <div>
                                 <strong class="text-success">${event.type === 'arrivee' ? 'Arrivée' : 'Départ'}</strong>
                                 <span class="text-muted ms-2">à ${timeString}</span>
-                                <span class="ms-2">• ${event.prenom} ${event.nom}</span>
+                                <span class="ms-2">• ${event.prenom} ${event.nom} <span class="badge bg-light text-dark ms-2">${acctLabel}</span></span>
                             </div>
                             <div class="text-end">
                                 <small class="text-success"><i class="fas fa-check-circle"></i> En ligne</small>
@@ -742,25 +751,67 @@ class AdvancedBadgeScanner {
     
     async handleScanError(error) {
         console.error('Erreur de scan:', error);
-        
         const errorMessage = error.message || 'Erreur lors du scan';
-        
-        // Feedback utilisateur
-        this.showFeedback(errorMessage, 'error');
-        this.animateError();
-        
-        // Gestion spécifique des erreurs réseau
-        if (errorMessage.includes('réseau') || errorMessage.includes('timeout') || errorMessage.includes('Network')) {
-            this.showFeedback('Problème de connexion. Vérifiez votre réseau.', 'warning');
-            this.enableOfflineMode();
+        let overlayMsg = errorMessage;
+        let overlayType = 'error';
+
+        // Affichage contextualisé selon le code d'erreur
+        switch (error.code) {
+            case 'POINTAGE_DUPLICATE':
+                overlayMsg = `${error.details.message}<br><button id='retry-btn' class='btn btn-sm btn-primary mt-2'>Réessayer</button>`;
+                overlayType = 'warning';
+                break;
+            case 'EMPLOYE_NOT_FOUND':
+            case 'ADMIN_NOT_FOUND':
+                overlayMsg = `${error.details.message}<br><button id='help-btn' class='btn btn-sm btn-secondary mt-2'>Aide</button>`;
+                overlayType = 'danger';
+                break;
+            case 'DB_ERROR':
+            case 'EXCEPTION':
+                overlayMsg = 'Erreur serveur. Veuillez réessayer ou contacter le support.';
+                overlayType = 'danger';
+                break;
+            case 'METHOD_NOT_ALLOWED':
+            case 'INVALID_JSON':
+            case 'BADGE_DATA_MISSING':
+                overlayMsg = 'Données du badge invalides. Vérifiez le QR code.';
+                overlayType = 'danger';
+                break;
+            default:
+                if (errorMessage.includes('réseau') || errorMessage.includes('timeout') || errorMessage.includes('Network')) {
+                    overlayMsg = 'Problème de connexion. Vérifiez votre réseau.';
+                    overlayType = 'warning';
+                    this.enableOfflineMode();
+                }
         }
-        
+
+        // Overlay feedback
+        this.showFeedback(overlayMsg, overlayType);
+        this.animateError();
+
+        // Ajout d'action sur bouton si présent
+        setTimeout(() => {
+            const retryBtn = document.getElementById('retry-btn');
+            if (retryBtn) {
+                retryBtn.onclick = () => {
+                    this.isProcessing = false;
+                    this.updateStatus('ready', 'Prêt pour le scan suivant');
+                };
+            }
+            const helpBtn = document.getElementById('help-btn');
+            if (helpBtn) {
+                helpBtn.onclick = () => {
+                    window.open('mailto:support@pointage.local?subject=Badge non reconnu');
+                };
+            }
+        }, 100);
+
         // Limite de tentatives
         if (this.scanAttempts >= this.maxScanAttempts) {
             this.showFeedback('Trop de tentatives échouées. Redémarrage du scanner...', 'warning');
             setTimeout(() => this.restartScanner(), 3000);
         }
-        
+
         // Enregistrement pour debug
         this.recordFailedScan(error);
     }
@@ -923,7 +974,7 @@ class AdvancedBadgeScanner {
         if (form) form.dataset.required = required ? 'true' : 'false';
         
         // Pré-remplir les champs
-        document.getElementById('justificationEmployeId').value = badgeData.employe_id;
+        document.getElementById('justificationEmployeId').value = badgeData.employe_id || scanResult?.data?.user_id || scanResult?.user_id || '';
         document.getElementById('justificationPointageId').value = scanResult?.data?.pointage_id || scanResult.pointage_id || '';
         document.getElementById('justificationDate').value = new Date().toISOString().split('T')[0];
         const fullName = scanResult?.data?.employe?.full_name || `${badgeData.prenom} ${badgeData.nom}`;
@@ -1126,11 +1177,12 @@ class AdvancedBadgeScanner {
         }
     }
     
-    async loadPointagesJour(date = null) {
+    async loadPointagesJour(date = null, range = null) {
         const pointagesContainer = document.getElementById('pointages-container');
         if (!pointagesContainer) return;
         
-        const dateFilter = date || (this.dateFilter ? this.dateFilter.value : new Date().toISOString().split('T')[0]);
+        const dateRef = date || (this.dateFilter ? this.dateFilter.value : new Date().toISOString().split('T')[0]);
+        const rangeMode = range || (this.rangeFilter ? this.rangeFilter.value : 'week');
         
         try {
             pointagesContainer.innerHTML = `
@@ -1140,27 +1192,44 @@ class AdvancedBadgeScanner {
                 </div>
             `;
             
-            const url = `${this.apiEndpoints.getPointagesJour}?date=${encodeURIComponent(dateFilter)}`;
+            let url = `${this.apiEndpoints.getPointagesJour}`;
+            if (rangeMode === 'day') {
+                url += `?date=${encodeURIComponent(dateRef)}`;
+            } else {
+                url += `?range=${encodeURIComponent(rangeMode)}&date=${encodeURIComponent(dateRef)}`;
+            }
             console.log('Chargement des pointages depuis:', url);
             
             const response = await fetch(url);
             
             if (!response.ok) {
-                throw new Error(`Erreur HTTP ${response.status}`);
+                // Try to extract JSON message to show friendly UI text
+                const textBody = await response.text();
+                let parsed = null;
+                try { parsed = JSON.parse(textBody); } catch (e) { /* ignore */ }
+                const serverMessage = parsed?.message || parsed?.error || `Erreur HTTP ${response.status}`;
+                console.error('API get_pointages error:', serverMessage, parsed?.code || 'no-code');
+                pointagesContainer.innerHTML = `
+                    <div class="text-center p-4 text-muted">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <p>Erreur lors du chargement des pointages: ${serverMessage}</p>
+                    </div>
+                `;
+                return;
             }
             
             const data = await response.json();
             
-                if (data.success) {
+            if (data.success) {
                 // Prefer summaries (aggregated sentences) when available
                 const entries = data.summaries && data.summaries.length ? data.summaries : (data.pointages || []);
-                this.renderPointagesJour(entries, data.stats || {}, dateFilter);
+                this.renderPointagesJour(entries, data.stats || {}, dateRef, rangeMode);
                 this.updateStats(data.stats || {});
             } else {
                 pointagesContainer.innerHTML = `
                     <div class="text-center p-4 text-muted">
                         <i class="fas fa-calendar-times fa-2x mb-3"></i>
-                        <p>Aucun pointage trouvé pour cette date</p>
+                        <p>Aucun pointage trouvé pour cette période</p>
                     </div>
                 `;
             }
@@ -1191,20 +1260,36 @@ class AdvancedBadgeScanner {
         }
     }
     
-    renderPointagesJour(pointages, stats, date) {
+    renderPointagesJour(pointages, stats, dateRef, rangeMode = 'day') {
         const container = document.getElementById('pointages-container');
         if (!container) return;
         
-        // Mettre à jour la date affichée
+        // Mettre à jour la période affichée
         const dateDisplay = document.getElementById('current-date');
         if (dateDisplay) {
-            const dateObj = new Date(date);
-            dateDisplay.textContent = dateObj.toLocaleDateString('fr-FR', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
+            if (rangeMode === 'day') {
+                const dateObj = new Date(dateRef);
+                dateDisplay.textContent = dateObj.toLocaleDateString('fr-FR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            } else if (rangeMode === 'week') {
+                // Compute Monday-Sunday for the reference date
+                const ref = new Date(dateRef);
+                const day = (ref.getDay() + 6) % 7; // 0 = Monday
+                const monday = new Date(ref);
+                monday.setDate(ref.getDate() - day);
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                dateDisplay.textContent = `${monday.toLocaleDateString('fr-FR')} — ${sunday.toLocaleDateString('fr-FR')}`;
+            } else if (rangeMode === 'month') {
+                const ref = new Date(dateRef);
+                const first = new Date(ref.getFullYear(), ref.getMonth(), 1);
+                const last = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+                dateDisplay.textContent = `${first.toLocaleDateString('fr-FR')} — ${last.toLocaleDateString('fr-FR')}`;
+            }
         }
         
         if (!pointages || pointages.length === 0) {
@@ -1212,7 +1297,7 @@ class AdvancedBadgeScanner {
                 <div class="pointage-list">
                     <div class="text-center p-5 text-muted">
                         <i class="fas fa-calendar-times fa-3x mb-3"></i>
-                        <p class="mb-0">Aucun pointage enregistré pour cette date</p>
+                        <p class="mb-0">Aucun pointage enregistré pour cette période</p>
                     </div>
                 </div>
             `;
@@ -1228,6 +1313,19 @@ class AdvancedBadgeScanner {
                         <strong>${entry.fullname}</strong>
                         <div class="text-muted small">${entry.departement}</div>
                         <div class="mt-2">${entry.sentence}</div>
+                    </div>
+                </div>
+                `;
+            } else if (entry.date || entry.heure) {
+                // Entry is a raw pointage (with date & time)
+                const name = `${entry.prenom || entry.fullname || ''} ${entry.nom || ''}`.trim();
+                const time = entry.date ? `${new Date(entry.date).toLocaleDateString('fr-FR')} ${entry.heure || ''}` : (entry.heure || '');
+                const typeLabel = entry.type || '';
+                html += `
+                <div class="pointage-item p-3 border-bottom">
+                    <div class="d-flex justify-content-between">
+                        <div>${name} • ${entry.departement || ''}</div>
+                        <div class="text-muted small">${typeLabel} à ${time}</div>
                     </div>
                 </div>
                 `;
@@ -1300,10 +1398,26 @@ class AdvancedBadgeScanner {
         // Filtre de date
         if (this.dateFilter) {
             this.dateFilter.addEventListener('change', (e) => {
-                this.loadPointagesJour(e.target.value);
+                // Only auto-apply date changes when in 'day' mode
+                const mode = (this.rangeFilter && this.rangeFilter.value) ? this.rangeFilter.value : 'day';
+                if (mode === 'day') {
+                    this.loadPointagesJour(e.target.value, 'day');
+                } else {
+                    // Do not auto-apply; user can click refresh
+                    this.showFeedback('Date modifiée — cliquez sur le bouton de rafraîchissement pour appliquer', 'info');
+                }
             });
         }
         
+        // Range selector (day/week/month)
+        if (this.rangeFilter) {
+            this.rangeFilter.addEventListener('change', (e) => {
+                this.updateDateInputState();
+                // Load period immediately when changed (week/month/day)
+                this.loadPointagesJour(null, e.target.value);
+            });
+        }
+
         // Bouton de rafraîchissement
         if (this.refreshHistoryBtn) {
             this.refreshHistoryBtn.addEventListener('click', () => {
@@ -1407,6 +1521,19 @@ class AdvancedBadgeScanner {
         // Vérifier l'état initial
         if (!navigator.onLine) {
             this.showFeedback('Mode hors ligne - certaines fonctionnalités sont limitées', 'warning');
+        }
+    }
+
+    // Mettre à jour l'état du champ date selon le mode sélectionné
+    updateDateInputState() {
+        if (!this.dateFilter || !this.rangeFilter) return;
+        const mode = this.rangeFilter.value;
+        if (mode === 'day') {
+            this.dateFilter.removeAttribute('disabled');
+            this.dateFilter.title = 'Sélectionnez une date spécifique';
+        } else {
+            this.dateFilter.setAttribute('disabled', 'disabled');
+            this.dateFilter.title = 'La date sert de référence pour la semaine/mois et n\'est pas appliquée directement';
         }
     }
     

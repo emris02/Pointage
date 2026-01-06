@@ -104,8 +104,9 @@ function loadCalendarEvents(start, end, isAdmin, successCallback, failureCallbac
         return;
     }
 
-    // Admin: conserver l'API calendrier existante
-    fetch('api/calendrier.php', {
+    // Admin: charger aussi les pointages (agrégés) puis les événements généraux, et fusionner
+    const p1 = fetch(`api/get_pointage_events.php?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`).then(r => r.json()).catch(() => []);
+    const p2 = fetch('api/calendrier.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,11 +115,25 @@ function loadCalendarEvents(start, end, isAdmin, successCallback, failureCallbac
             end: endISO,
             employe_id: null
         })
-    })
-    .then(response => response.json())
-    .then(events => { successCallback(events); })
-    .catch(error => { console.error('Erreur chargement événements:', error); failureCallback(error); })
-    .finally(() => { if (loadingEl) loadingEl.style.display = 'none'; });
+    }).then(r => r.json()).catch(() => []);
+
+    Promise.all([p1, p2])
+        .then(([pointages, generalEvents]) => {
+            const events = []
+                .concat(Array.isArray(pointages) ? pointages : [])
+                .concat(Array.isArray(generalEvents) ? generalEvents.map(ev => ({
+                    id: ev.id,
+                    title: ev.title || ev.titre || 'Événement',
+                    start: ev.start || ev.start_date,
+                    end: ev.end || ev.end_date || null,
+                    allDay: false,
+                    color: ev.color || '#0672e4',
+                    extendedProps: Object.assign({ event_type: 'evenement' }, ev.extendedProps || {})
+                })) : []);
+            successCallback(events);
+        })
+        .catch(err => { console.error('Erreur chargement événements:', err); failureCallback(err); })
+        .finally(() => { if (loadingEl) loadingEl.style.display = 'none'; });
 }
 
 // Affichage des détails d'un événement

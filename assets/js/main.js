@@ -1,7 +1,7 @@
-// ============================================
+// ==
 // JavaScript principal de l'application
 // Pointage Xpert Pro
-// ============================================
+// ==
 
 const App = {
     // Configuration
@@ -355,9 +355,9 @@ const App = {
     }
 };
 
-// ============================================
+// ==
 // Initialisation au chargement du DOM
-// ============================================
+// ==
 document.addEventListener('DOMContentLoaded', function() {
     try {
         App.init();
@@ -367,9 +367,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ============================================
+// ==
 // Gestionnaires d'événements globaux
-// ============================================
+// ==
 
 // Recharger le calendrier quand la fenêtre est redimensionnée
 window.addEventListener('resize', function() {
@@ -387,9 +387,9 @@ window.addEventListener('error', function(e) {
     }
 });
 
-// ============================================
+// ==
 // Exposer certaines fonctions globalement
-// ============================================
+// ==
 window.App = App;
 
 // Fonction pour charger dynamiquement un panneau

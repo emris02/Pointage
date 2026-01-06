@@ -94,7 +94,7 @@ body {
 }
 
 .sidebar-header {
-    padding: 2rem 1.5rem;
+    padding: 0.5rem 1.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
     z-index: 1;
@@ -107,7 +107,7 @@ body {
 }
 
 .sidebar-nav {
-    padding: 1rem 0;
+    padding: 0.5rem 0;
     position: relative;
     z-index: 1;
 }
@@ -160,7 +160,7 @@ body {
 
 /* Main content styles */
 .main-content {
-    padding: 2rem;
+    padding: 0.5rem !important;
     background: var(--light-bg);
     min-height: 100vh;
     transition: margin-left 0.3s ease;
@@ -173,7 +173,7 @@ body {
 .header-section {
     background: white;
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: 0.5rem;
     margin-bottom: 2rem;
     box-shadow: var(--shadow);
     animation: slideInLeft 0.6s ease-out;
@@ -189,7 +189,7 @@ body {
 .global-search {
     background: white;
     border-radius: var(--border-radius);
-    padding: 1rem;
+    padding: 0.5rem;
     margin-bottom: 1.5rem;
     box-shadow: var(--shadow);
 }
@@ -236,7 +236,7 @@ body {
 .stat-card {
     background: white;
     border-radius: var(--border-radius);
-    padding: 1rem;
+    padding: 0.5rem;
     box-shadow: var(--shadow);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-left: 4px solid;
@@ -314,7 +314,7 @@ body {
 .calendar-section {
     background: white;
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: 0.5rem;
     box-shadow: var(--shadow);
     animation: fadeInUp 0.8s ease-out;
     min-height: 400px;
@@ -329,7 +329,7 @@ body {
 .widget {
     background: white;
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: 0.5rem;
     box-shadow: var(--shadow);
     animation: slideInLeft 0.8s ease-out;
 }
@@ -413,7 +413,7 @@ body {
 }
 
 .fc-header-toolbar {
-    padding: 1rem;
+    padding: 0.5rem;
     background: var(--light-bg);
     border-bottom: 1px solid #eee;
 }
@@ -551,11 +551,11 @@ body {
     }
     
     .main-content {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .header-section {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .sidebar {
@@ -576,7 +576,7 @@ body {
     }
     
     .stat-card {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .stat-number {

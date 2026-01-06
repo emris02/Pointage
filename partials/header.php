@@ -300,9 +300,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-/* =======================================================
+/* ======
    VARIABLES GLOBALES
-======================================================= */
+====== */
 :root {
     --primary: #0672e4;
     --primary-dark: #3a56d4;
@@ -319,9 +319,9 @@ document.addEventListener('DOMContentLoaded', function() {
     --transition: all 0.3s ease;
 }
 
-/* =======================================================
+/* ======
    HEADER
-======================================================= */
+====== */
 .header-dashboard {
     position: sticky;
     top: 0;
@@ -344,9 +344,9 @@ document.addEventListener('DOMContentLoaded', function() {
     justify-content: center;
 }
 
-/* =======================================================
+/* ======
    BOUTON DROPDOWN
-======================================================= */
+====== */
 .user-dropdown-btn {
     background: white !important;
     border: 1px solid var(--border) !important;
@@ -375,9 +375,9 @@ document.addEventListener('DOMContentLoaded', function() {
     color: var(--primary) !important;
 }
 
-/* =======================================================
+/* ======
    AVATARS
-======================================================= */
+====== */
 .user-avatar-wrapper {
     position: relative;
 }
@@ -420,9 +420,9 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 1.1rem;
 }
 
-/* =======================================================
+/* ======
    INFOS UTILISATEUR
-======================================================= */
+====== */
 .user-info {
     min-width: 100px;
 }
@@ -438,9 +438,9 @@ document.addEventListener('DOMContentLoaded', function() {
     line-height: 1.2;
 }
 
-/* =======================================================
+/* ======
    ICÔNE FLÈCHE
-======================================================= */
+====== */
 .dropdown-arrow {
     color: var(--text-light);
     font-size: 0.8rem;
@@ -448,9 +448,9 @@ document.addEventListener('DOMContentLoaded', function() {
     margin-left: 4px;
 }
 
-/* =======================================================
+/* ======
    MENU DROPDOWN
-======================================================= */
+====== */
 .dropdown-menu {
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function() {
     background: var(--primary-light);
     border-radius: 8px;
     margin-bottom: 0.5rem;
-    padding: 1rem !important;
+    padding: 0.5rem !important;
 }
 
 .dropdown-header h6 {
@@ -495,9 +495,9 @@ document.addEventListener('DOMContentLoaded', function() {
     margin: 0.5rem 1rem;
 }
 
-/* =======================================================
+/* ======
    ITEMS DROPDOWN
-======================================================= */
+====== */
 .dropdown-item {
     padding: 0.75rem 1rem;
     border-radius: 8px;
@@ -537,9 +537,9 @@ document.addEventListener('DOMContentLoaded', function() {
     color: var(--danger) !important;
 }
 
-/* =======================================================
+/* ======
    OVERLAY MOBILE
-======================================================= */
+====== */
 .dropdown-overlay {
     position: fixed;
     top: 0;
@@ -558,9 +558,9 @@ document.addEventListener('DOMContentLoaded', function() {
     opacity: 1;
 }
 
-/* =======================================================
+/* ======
    RESPONSIVE MOBILE
-======================================================= */
+====== */
 @media (max-width: 991.98px) {
     /* Header fixe */
     .header-dashboard {
@@ -640,25 +640,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
-/* =======================================================
+/* ======
    CONTENU PRINCIPAL
-======================================================= */
+====== */
 .main-content-container {
     min-height: calc(100vh - 70px);
-    padding: 1.5rem;
+    padding: 0.5rem;
     background: var(--light);
 }
 
 @media (max-width: 991.98px) {
     .main-content-container {
-        padding: 1rem;
+        padding: 0.5rem;
         min-height: calc(100vh - 70px);
     }
 }
 
-/* =======================================================
+/* ======
    ACCESSIBILITÉ
-======================================================= */
+====== */
 @media (prefers-reduced-motion: reduce) {
     .dropdown-arrow,
     .dropdown-menu,
@@ -669,9 +669,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
-/* =======================================================
+/* ======
    IMPRESSION
-======================================================= */
+====== */
 @media print {
     .header-dashboard,
     .dropdown-overlay {

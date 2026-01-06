@@ -78,7 +78,7 @@ body {
 
 .timeline-content {
     background: white;
-    padding: 1rem;
+    padding: 0.5rem;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
@@ -145,7 +145,7 @@ body {
 /* Statistics Cards */
 .stat-card {
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 0.5rem 1rem;
 }
 
 .stat-card .fa-2x {
@@ -175,7 +175,7 @@ body {
     }
     
     .card-body {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     .stat-card {

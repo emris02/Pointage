@@ -46,10 +46,11 @@ class PointageService {
             
             // 4. Valider les règles métier
             $this->validateClockingRules($tokenData['employe_id'], $clockingType, $context);
+
             
             // 5. Enregistrer le pointage
             $pointageData = [
-                'employee_id' => $tokenData['employe_id'],
+                'employe_id' => $tokenData['employe_id'],
                 'type' => $clockingType,
                 'timestamp' => date('Y-m-d H:i:s'),
                 'device_info' => $context['device_info'] ?? null,
@@ -107,9 +108,9 @@ class PointageService {
         $today = date('Y-m-d');
         
         // Récupérer le dernier pointage du jour
-        $sql = "SELECT type FROM pointages 
-                WHERE employee_id = ? AND DATE(timestamp) = ?
-                ORDER BY timestamp DESC LIMIT 1";
+        $sql = "SELECT COALESCE(date_heure,date_pointage,created_at) as timestamp, type FROM pointages 
+                WHERE employe_id = ? AND DATE(COALESCE(date_heure,date_pointage,created_at)) = ?
+                ORDER BY COALESCE(date_heure,date_pointage,created_at) DESC LIMIT 1";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$employeeId, $today]);
@@ -137,7 +138,7 @@ class PointageService {
         
         // Règle 1: Pas plus de 2 pointages du même type par jour
         $sql = "SELECT COUNT(*) FROM pointages 
-                WHERE employee_id = ? AND DATE(timestamp) = ? AND type = ?";
+                WHERE employe_id = ? AND DATE(COALESCE(date_heure,date_pointage,created_at)) = ? AND type = ?";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$employeeId, $today, $type]);
@@ -148,9 +149,9 @@ class PointageService {
         }
         
         // Règle 2: Délai minimum entre deux pointages (5 minutes)
-        $sql = "SELECT timestamp FROM pointages 
-                WHERE employee_id = ? 
-                ORDER BY timestamp DESC LIMIT 1";
+        $sql = "SELECT COALESCE(date_heure,date_pointage,created_at) as timestamp FROM pointages 
+                WHERE employe_id = ? 
+                ORDER BY COALESCE(date_heure,date_pointage,created_at) DESC LIMIT 1";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$employeeId]);
@@ -176,7 +177,7 @@ class PointageService {
         // Récupérer les zones autorisées pour l'employé
         $sql = "SELECT latitude, longitude, radius FROM authorized_locations al
                 JOIN employee_locations el ON al.id = el.location_id
-                WHERE el.employee_id = ? AND al.is_active = 1";
+                WHERE el.employe_id = ? AND al.is_active = 1";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$employeeId]);
@@ -252,7 +253,7 @@ class PointageService {
      */
     private function saveBadgeToken(int $employeeId, array $tokenData): void {
         $sql = "INSERT INTO badge_tokens (
-            employee_id, token_hash, type, created_at, expires_at, status
+            employe_id, token_hash, type, created_at, expires_at, status
         ) VALUES (?, ?, ?, NOW(), ?, 'active')";
         
         $stmt = $this->db->prepare($sql);

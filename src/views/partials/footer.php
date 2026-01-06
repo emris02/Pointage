@@ -216,9 +216,9 @@
 </html>
 
 <style>
-/* =======================================================
+/* ======
    FOOTER MODERNE
-======================================================= */
+====== */
 .site-footer {
     background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%);
     color: #fff;
@@ -373,7 +373,7 @@
 .newsletter-section {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
-    padding: 2rem;
+    padding: 0.5rem;
     margin: 2rem 0 3rem;
 }
 
@@ -490,9 +490,9 @@
     opacity: 1;
 }
 
-/* =======================================================
+/* ======
    BOUTON RETOUR EN HAUT
-======================================================= */
+====== */
 .back-to-top {
     position: fixed;
     bottom: 2rem;
@@ -525,9 +525,9 @@
     box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
 }
 
-/* =======================================================
+/* ======
    COOKIE CONSENT
-======================================================= */
+====== */
 .cookie-consent {
     position: fixed;
     bottom: 2rem;
@@ -535,7 +535,7 @@
     transform: translateX(-50%) translateY(100px);
     background: white;
     border-radius: 10px;
-    padding: 1.5rem;
+    padding: 0.5rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     max-width: 500px;
     width: 90%;
@@ -602,9 +602,9 @@
     background: #e9ecef;
 }
 
-/* =======================================================
+/* ======
    RESPONSIVE
-======================================================= */
+====== */
 @media (max-width: 768px) {
     .site-footer {
         padding: 3rem 0 1.5rem;
@@ -619,7 +619,7 @@
     }
     
     .newsletter-section {
-        padding: 1.5rem;
+        padding: 0.5rem;
     }
     
     .cookie-consent {
