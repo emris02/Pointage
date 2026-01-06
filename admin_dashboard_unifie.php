@@ -226,7 +226,7 @@ $additionalCSS = ['assets/css/admin.css'];
                             </div>
 
                         </div>
-                    </div>
+                    </div> 
                 </div>
 
                 <!-- ===================== -->
@@ -240,7 +240,6 @@ $additionalCSS = ['assets/css/admin.css'];
 
                     <div class="mb-4">
                         <?php include 'src/views/pages/panel_heures.php'; ?>
-<<<<<<< HEAD
 
                         <!-- Panel Temps Totaux (liste paginée) -->
                         <div id="temps_totaux" class="panel-section" style="display:none;">
