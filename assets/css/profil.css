@@ -737,3 +737,138 @@ body.has-sidebar .profile-page-wrapper {
         border: 2px solid currentColor;
     }
 }
+
+/* ==========================
+   SIDEBAR — Global shared
+   Moves sidebar visual rules here so pages don't include inline styles
+   ========================== */
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    background: #ffffff;
+    border-right: 1px solid #eaeaea;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: width 0.3s ease, transform 0.3s ease;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+}
+
+.sidebar.collapsed {
+    width: 70px;
+}
+
+.sidebar .sidebar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo img {
+    width: 32px;
+    height: 32px;
+}
+
+.logo span {
+    font-size: 17px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.burger-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #7f8c8d;
+}
+
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    margin: 4px 10px;
+    border-radius: 6px;
+    color: #5d6d7e;
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-nav a i {
+    width: 22px;
+    margin-right: 12px;
+}
+
+.sidebar-nav a.active {
+    background: #ebf5fb;
+    color: #2980b9;
+    font-weight: 500;
+    border-left-color: #2980b9;
+}
+
+.sidebar-nav .logout {
+    margin-top: auto;
+    color: #e74c3c;
+    border-top: 1px solid #eaeaea;
+}
+
+.main-content {
+    margin-top: 70px;
+    margin-left: 260px;
+    min-height: calc(100vh - 70px);
+    background: var(--light-color, #f8fafc);
+    transition: margin-left .3s ease;
+}
+
+.main-content.sidebar-collapsed {
+    margin-left: 70px;
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    .main-content {
+        margin-left: 0 !important;
+    }
+    .sidebar-overlay {
+        display: none;
+    }
+    .sidebar-overlay.active {
+        display: block;
+    }
+}
+
+/* Utility sizes used by profile templates to avoid inline styles */
+.size-40 { width: 40px !important; height: 40px !important; }
+.size-48 { width: 48px !important; height: 48px !important; }
+.size-60 { width: 60px !important; height: 60px !important; }
+.avatar-large { width: 150px; height: 150px; display:flex; align-items:center; justify-content:center; font-size:3rem; }
+.progress-sm { height: 8px; }
+
+/* Tooltip-like accessible label for collapsed sidebar using title attribute is handled by browser default.
+    Keep focus-visible behaviour for keyboard users */
+.sidebar a:focus { outline: 2px solid rgba(41, 128, 185, 0.15); }

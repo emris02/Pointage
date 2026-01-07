@@ -7,10 +7,11 @@
 // define('TOKEN_EXPIRATION', 7200); // secondes (2 heures)
 
 // Configuration base
-$host = "localhost";
-$dbname = "pointage";
-$username = "root";
-$password = "";
+
+$host     = 'sql103.byethost7.com';
+$dbname   = 'b7_39535458_pointage';
+$username = 'b7_39535458';
+$password = 'Bi6tPXJDDmmRZHm';
 
 try {
     $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";

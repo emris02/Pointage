@@ -58,9 +58,9 @@
     --employe-transition-slow: 350ms ease;
 }
 
-/* ====
+/* =====================================================
    LAYOUT EMPLOYÉ MODERNE
-==== */
+===================================================== */
 .employe-layout {
     background: var(--page-bg-gradient, linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%));
     min-height: 100vh;
@@ -74,9 +74,9 @@
     padding: var(--employe-spacing-md);
 }
 
-/* ====
+/* =====================================================
    HEADER EMPLOYÉ PROFESSIONNEL
-==== */
+===================================================== */
 .employe-header {
     background: var(--employe-card-bg);
     border-bottom: 1px solid var(--employe-border-color);
@@ -122,9 +122,9 @@
     gap: var(--employe-spacing-sm);
 }
 
-/* ====
+/* =====================================================
    CARTES EMPLOYÉ MODERNES
-==== */
+===================================================== */
 .employe-card {
     background: var(--employe-card-bg);
     border-radius: var(--employe-border-radius-lg);
@@ -179,9 +179,9 @@
     background-color: var(--employe-hover-bg);
 }
 
-/* ====
+/* =====================================================
    PROFIL EMPLOYÉ PROFESSIONNEL
-==== */
+===================================================== */
 .profile-card {
     text-align: center;
     position: relative;
@@ -307,9 +307,9 @@
     font-weight: 500;
 }
 
-/* ====
+/* =====================================================
    STATISTIQUES EMPLOYÉ AVANCÉES
-==== */
+===================================================== */
 .employe-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -421,9 +421,9 @@
     line-height: 1.4;
 }
 
-/* ====
+/* =====================================================
    CALENDRIER EMPLOYÉ PROFESSIONNEL
-==== */
+===================================================== */
 .calendar-card {
     overflow: hidden;
 }
@@ -561,9 +561,9 @@
     border-radius: var(--employe-border-radius-sm);
 }
 
-/* ====
+/* =====================================================
    POINTAGES EMPLOYÉ MODERNE
-==== */
+===================================================== */
 .pointage-card {
     background: linear-gradient(135deg, var(--employe-primary), var(--employe-info));
     color: white;
@@ -692,9 +692,9 @@
     opacity: 0.8;
 }
 
-/* ====
+/* =====================================================
    BADGE EMPLOYÉ MODERNE
-==== */
+===================================================== */
 .badge-section {
     background: var(--employe-card-bg);
     text-align: center;
@@ -796,9 +796,9 @@
     margin-top: var(--employe-spacing-lg);
 }
 
-/* ====
+/* =====================================================
    ACTIONS RAPIDES MODERNES
-==== */
+===================================================== */
 .quick-actions-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -864,9 +864,9 @@
     line-height: 1.4;
 }
 
-/* ====
+/* =====================================================
    NOTIFICATIONS EMPLOYÉ MODERNES
-==== */
+===================================================== */
 .notification-wrapper {
     position: relative;
 }
@@ -993,9 +993,9 @@
     color: var(--employe-text-muted);
 }
 
-/* ====
+/* =====================================================
    BOUTONS EMPLOYÉ MODERNES
-==== */
+===================================================== */
 .employe-btn {
     display: inline-flex;
     align-items: center;
@@ -1061,9 +1061,9 @@
     transform: translateY(-2px);
 }
 
-/* ====
+/* =====================================================
    GRID ET LAYOUT RESPONSIVE
-==== */
+===================================================== */
 .employe-grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
@@ -1077,9 +1077,9 @@
 .grid-col-2 { grid-column: span 2; }
 .grid-col-1 { grid-column: span 1; }
 
-/* ====
+/* =====================================================
    UTILITAIRES EMPLOYÉ
-==== */
+===================================================== */
 .employe-text-center { text-align: center; }
 .employe-text-left { text-align: left; }
 .employe-text-right { text-align: right; }
@@ -1111,9 +1111,9 @@
 .employe-shadow-md { box-shadow: var(--employe-shadow-md); }
 .employe-shadow-lg { box-shadow: var(--employe-shadow-lg); }
 
-/* ====
+/* =====================================================
    RESPONSIVE DESIGN
-==== */
+===================================================== */
 @media (max-width: 1024px) {
     .employe-stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1201,9 +1201,9 @@
     }
 }
 
-/* ====
+/* =====================================================
    ANIMATIONS EMPLOYÉ
-==== */
+===================================================== */
 @keyframes employe-fade-in {
     from {
         opacity: 0;
@@ -1241,9 +1241,9 @@
     animation: employe-pulse 2s infinite;
 }
 
-/* ====
+/* =====================================================
    SCROLLBAR PERSONNALISÉE
-==== */
+===================================================== */
 .employe-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -1263,9 +1263,9 @@
     background: var(--employe-text-muted);
 }
 
-/* ====
+/* =====================================================
    ACCESSIBILITÉ
-==== */
+===================================================== */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -1288,9 +1288,9 @@
     border: 0;
 }
 
-/* ====
+/* =====================================================
    IMPRESSION
-==== */
+===================================================== */
 @media print {
     .employe-header,
     .employe-header-actions,

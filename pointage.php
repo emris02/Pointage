@@ -105,27 +105,29 @@ class PointageSystem {
 
     private function handleArrival(int $employeId): array {
         $now = date('Y-m-d H:i:s');
-        $heureLimite = date('Y-m-d') . ' 08:00:00';
+        $heureLimite = date('Y-m-d') . ' 09:00:00';
         $isLate = strtotime($now) > strtotime($heureLimite);
 
-        $stmt = $this->pdo->prepare("
-            INSERT INTO pointages 
-            (date_heure, employe_id, type, retard, retard_raison) 
-            VALUES (?, ?, 'arrivee', ?, ?)
-        ");
-        
+        $etat = $isLate ? 'retard' : 'normal';
+
+        $stmt = $this->pdo->prepare("INSERT INTO pointages (date_heure, employe_id, type, retard_cause, etat) VALUES (?, ?, 'arrivee', ?, ?)");
         $stmt->execute([
             $now,
             $employeId,
-            $isLate ? 1 : 0,
-            $isLate ? "Arrivée après 08h00" : null
+            $isLate ? "Arrivée après 09h00" : null,
+            $etat
         ]);
+
+        $pointageId = (int)$this->pdo->lastInsertId();
 
         return [
             'status' => 'success',
             'type' => 'arrivee',
             'message' => 'Arrivée enregistrée',
             'retard' => $isLate,
+            'etat' => $etat,
+            'pointage_id' => $pointageId,
+            'require_justification' => $isLate,
             'timestamp' => $now,
         ];
     }
@@ -144,16 +146,17 @@ class PointageSystem {
             $now
         );
 
-        $stmt = $this->pdo->prepare("
-            INSERT INTO pointages 
-            (date_heure, employe_id, type, temps_total, temps_pause) 
-            VALUES (?, ?, 'depart', ?, ?)
-        ");
+        $regulationDeparture = date('Y-m-d') . ' 18:00:00';
+        $isEarly = strtotime($now) < strtotime($regulationDeparture);
+        $etat = $isEarly ? 'depart_anticipé' : 'normal';
+
+        $stmt = $this->pdo->prepare("INSERT INTO pointages (date_heure, employe_id, type, temps_total, temps_pause, etat) VALUES (?, ?, 'depart', ?, ?, ?)");
         $stmt->execute([
             $now,
             $employeId,
             $workData['temps_travail'],
-            $workData['temps_pause']
+            $workData['temps_pause'],
+            $etat
         ]);
 
         // Expirer le badge actif
@@ -172,12 +175,17 @@ class PointageSystem {
             $newTokenData['expires_at']
         ]);
 
+        $pointageId = (int)$this->pdo->lastInsertId();
+
         return [
             'status' => 'success',
             'type' => 'depart',
             'message' => 'Départ enregistré. Nouveau badge généré.',
             'temps_travail' => $workData['temps_travail'],
             'temps_pause' => $workData['temps_pause'],
+            'etat' => $etat,
+            'pointage_id' => $pointageId,
+            'require_justification' => $isEarly,
             'timestamp' => $now,
         ];
     }

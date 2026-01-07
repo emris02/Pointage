@@ -36,21 +36,6 @@ $pageDescription = 'Votre espace personnel de pointage';
 
 $employe_id = $_SESSION['employe_id'];
 
-// HEADER SIMPLIFIÉ - Version avec toggle sidebar dynamique
-
-$theme = $_SESSION['theme'] ?? $APP_SETTINGS['theme'] ?? 'clair';
-$font_size = $APP_SETTINGS['font_size'] ?? 100;
-
-// Informations utilisateur
-$userName = isset($_SESSION['prenom']) && isset($_SESSION['nom']) 
-    ? htmlspecialchars($_SESSION['prenom'] . ' ' . $_SESSION['nom'])
-    : 'Administrateur';
-$userInitials = isset($_SESSION['prenom'], $_SESSION['nom'])
-    ? strtoupper(substr($_SESSION['prenom'], 0, 1) . substr($_SESSION['nom'], 0, 1))
-    : 'AD';
-$userRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'employe';
-$userFirstName = isset($_SESSION['prenom']) ? htmlspecialchars($_SESSION['prenom']) : 'Employe';
-
 // ✅ INITIALISATION SÉCURISÉE DES CONTRÔLEURS
 try {
     $employeController = new EmployeController($pdo);
@@ -74,7 +59,7 @@ try {
     die("Erreur lors du chargement du dashboard. Veuillez contacter l'administrateur.");
 }
 
-// ====== LOGIQUE DE JUSTIFICATION DES RETARDS ======
+// ==================== LOGIQUE DE JUSTIFICATION DES RETARDS ====================
 
 $showJustificationModal = false;
 $retardData = null;
@@ -142,16 +127,71 @@ if (!$showJustificationModal) {
 
 // 3. Traitement de la soumission de justification
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_justification'])) {
-    // Déprécié : la logique de justification est maintenant disponible via l'API
-    $_SESSION['justification_error'] = "La soumission de justificatif a été déplacée vers l'API (/api/justifier_retard.php). Utilisez cet endpoint avec la clé API du terminal (header X-Terminal-Key).";
-    header('Location: employe_dashboard.php');
-    exit();
-    // Legacy fields (kept for reference):
-    // $pointageId = (int)($_POST['pointage_id'] ?? 0);
-    // $raison = trim($_POST['raison'] ?? '');
-    // $details = trim($_POST['details'] ?? '');
-    // Legacy in-page justification handling removed: use /api/justifier_retard.php (POST) instead.
-    // The API accepts 'pointage_id', 'raison', 'details' and optional file 'piece_jointe' and returns JSON.
+    $pointageId = (int)($_POST['pointage_id'] ?? 0);
+    $raison = trim($_POST['raison'] ?? '');
+    $details = trim($_POST['details'] ?? '');
+    
+    if ($pointageId > 0 && !empty($raison)) {
+        try {
+            // Vérifier que le pointage appartient à l'employé
+            $stmt = $pdo->prepare("
+                SELECT id FROM pointages 
+                WHERE id = ? AND employe_id = ? AND type = 'arrivee'
+            ");
+            $stmt->execute([$pointageId, $employe_id]);
+            
+            if ($stmt->fetch()) {
+                // Gestion du fichier uploadé (optionnel)
+                $fichierPath = null;
+                if (isset($_FILES['piece_jointe']) && $_FILES['piece_jointe']['error'] === UPLOAD_ERR_OK) {
+                    $uploadDir = 'uploads/justifications/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    
+                    $fileName = uniqid() . '_' . basename($_FILES['piece_jointe']['name']);
+                    $fichierPath = $uploadDir . $fileName;
+                    
+                    if (move_uploaded_file($_FILES['piece_jointe']['tmp_name'], $fichierPath)) {
+                        // Fichier uploadé avec succès
+                    }
+                }
+                
+                // Enregistrer la justification
+                // CORRECTION : Ajout de la colonne employe_id qui manquait
+                $stmt = $pdo->prepare("
+                    INSERT INTO retards 
+                    (pointage_id, employe_id, raison, details, fichier_justificatif, statut, date_soumission) 
+                    VALUES (?, ?, ?, ?, ?, 'en_attente', NOW())
+                ");
+                
+                $stmt->execute([
+                    $pointageId,
+                    $employe_id,  // CORRECTION : Ajout de l'ID employé
+                    $raison,
+                    $details,
+                    $fichierPath
+                ]);
+                
+                // Supprimer de la session et cacher le modal
+                unset($_SESSION['pending_retard_justification']);
+                $showJustificationModal = false;
+                $retardData = null;
+                
+                // Ajouter un message de succès
+                $_SESSION['justification_success'] = true;
+                
+                // Rediriger pour éviter la re-soumission du formulaire
+                header("Location: employe_dashboard.php?justification=success");
+                exit();
+            }
+        } catch (Exception $e) {
+            error_log("Erreur enregistrement justification: " . $e->getMessage());
+            $justificationError = "Erreur lors de l'enregistrement de la justification.";
+        }
+    } else {
+        $justificationError = "Veuillez sélectionner une raison pour votre retard.";
+    }
 }
 
 // 4. Vérifier si l'utilisateur a ignoré le modal
@@ -176,7 +216,7 @@ if (isset($_GET['ignore_retard']) && isset($_SESSION['pending_retard_justificati
     $retardData = null;
 }
 
-// ====== FIN LOGIQUE JUSTIFICATION ======
+// ==================== FIN LOGIQUE JUSTIFICATION ====================
 
 // Traitement des requêtes AJAX pour la mise à jour du profil
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && 
@@ -188,36 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     $field = $input['field'] ?? null;
     $value = trim($input['value'] ?? '');
 
-    $allowedFields = ['nom', 'prenom', 'telephone', 'adresse', 'mot_de_passe', 'email'];
-
-    // Support batch updates via { data: { field1: value1, field2: value2, ... } }
-    if (isset($input['data']) && is_array($input['data'])) {
-        $results = [];
-        foreach ($input['data'] as $f => $v) {
-            $f = trim($f);
-            if (!in_array($f, $allowedFields)) {
-                $results[$f] = ['success' => false, 'message' => 'Champ non autorisé'];
-                continue;
-            }
-            $valToStore = $v;
-            if ($f === 'mot_de_passe') {
-                if (strlen($v) < 8) {
-                    $results[$f] = ['success' => false, 'message' => 'Mot de passe trop court'];
-                    continue;
-                }
-                $valToStore = password_hash($v, PASSWORD_DEFAULT);
-            }
-            try {
-                $stmt = $pdo->prepare("UPDATE employes SET `$f` = :value WHERE id = :id");
-                $stmt->execute([':value' => $valToStore, ':id' => $employe_id]);
-                $results[$f] = ['success' => true];
-            } catch (PDOException $e) {
-                $results[$f] = ['success' => false, 'message' => $e->getMessage()];
-            }
-        }
-        echo json_encode(['success' => true, 'results' => $results]);
-        exit;
-    }
+    $allowedFields = ['nom', 'prenom', 'telephone', 'adresse', 'mot_de_passe'];
 
     if (!$field || !in_array($field, $allowedFields) || empty($value)) {
         echo json_encode(['success' => false, 'message' => 'Requête invalide.']);
@@ -496,31 +507,6 @@ foreach ($pointages_par_jour as $date => $pointageDuJour) {
     }
 }
 
-// Si un résumé mensuel est disponible depuis le controller, l'utiliser pour remplacer les valeurs calculées localement
-if (!empty($employeStats['monthly_summary'])) {
-    $monthly = $employeStats['monthly_summary'];
-    $stats['jours_presents'] = $monthly['present_days'] ?? $stats['jours_presents'];
-    $stats['jours_retards'] = $monthly['late_count'] ?? $stats['jours_retards'];
-    $stats['temps_total'] = $monthly['total_seconds'] ? gmdate('H:i:s', $monthly['total_seconds']) : $stats['temps_total'];
-    $stats['presence_rate'] = $monthly['presence_rate'] ?? ($stats['jours_presents'] > 0 ? 100 : 0);
-    $stats['avg_daily'] = isset($monthly['avg_daily_seconds']) ? gmdate('H:i:s', $monthly['avg_daily_seconds']) : '00:00:00';
-    $stats['progression_percent'] = $monthly['progression_percent'] ?? null;
-    $stats['total_pointages'] = $monthly['total_pointages'] ?? $stats['total_pointages'] ?? count($pointages);
-}
-
-// Assurer la disponibilité d'un tableau monthly (sécurité si absent)
-$monthly = $employeStats['monthly_summary'] ?? [];
-
-// Variables attendues par la vue (compatibilité avec l'ancien code)
-$joursPresents = $stats['jours_presents'] ?? ($monthly['present_days'] ?? 0);
-$joursRetards = $stats['jours_retards'] ?? ($monthly['late_count'] ?? 0);
-$totalPointages = $stats['total_pointages'] ?? ($monthly['total_pointages'] ?? count($pointages));
-$tempsTravaille = $stats['temps_total'] ?? (isset($monthly['total_seconds']) ? gmdate('H:i:s', $monthly['total_seconds']) : '00:00:00');
-$evolutionJours = $monthly['progression_percent'] ?? ($stats['progression_percent'] ?? 0);
-$evolutionJours = is_numeric($evolutionJours) ? (int)$evolutionJours : 0;
-$avgDaily = isset($monthly['avg_daily_seconds']) ? gmdate('H:i:s', $monthly['avg_daily_seconds']) : ($stats['avg_daily'] ?? '00:00:00');
-
-
 // Calcul des retards justifiés
 $retardsJustifies = 0;
 $retardsNonJustifies = $stats['jours_retards'];
@@ -567,28 +553,6 @@ foreach ($raw_derniers as $p) {
 }
 
 $derniers_pointages = array_slice($derniers_pointages, 0, 8);
-
-// Calculer la durée pour chaque arrivée/départ dans les activités récentes
-foreach ($derniers_pointages as &$dp) {
-    $dpStart = $dp['date_heure'] ?? $dp['created_at'] ?? null;
-    $dp['duration_seconds'] = null;
-    $dp['duration_formatted'] = null;
-    $dp['ongoing'] = false;
-
-    if ($dpStart && in_array($dp['type'], ['arrivee','arrival'])) {
-        // Chercher le départ suivant
-        $stmt = $pdo->prepare("SELECT COALESCE(date_heure,date_pointage,created_at) as ts FROM pointages WHERE employe_id = ? AND COALESCE(date_heure,date_pointage,created_at) > ? AND type IN ('depart','departure') ORDER BY COALESCE(date_heure,date_pointage,created_at) ASC LIMIT 1");
-        $stmt->execute([$employe_id, $dpStart]);
-        $next = $stmt->fetch(PDO::FETCH_ASSOC);
-        $end = $next['ts'] ?? null;
-
-        $dur = $pointageController->getDurationBetween($employe_id, $dpStart, $end);
-        $dp['duration_seconds'] = $dur['seconds'];
-        $dp['duration_formatted'] = $dur['formatted'];
-        $dp['ongoing'] = $end === null; // si pas de départ trouvé
-    }
-}
-unset($dp);
 
 // Données pour l'affichage
 $date_actuelle = date('d F Y');
@@ -739,51 +703,6 @@ if ($showJustificationModal) {
     <link rel="stylesheet" href="assets/css/employe_dash.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/main.css">
-    
-    <style>
-    :root { 
-        font-size: <?= intval($font_size) ?>%; 
-        --primary: #4361ee;
-        --primary-dark: #3a56d4;
-        --primary-light: #eef2ff;
-        --danger: #ef4444;
-        --dark: #1e293b;
-        --light: #f8fafc;
-        --border: #e2e8f0;
-        --text: #1e293b;
-        --text-light: #64748b;
-        --sidebar-width: 240px;
-        --sidebar-collapsed-width: 70px;
-        --header-height: 70px;
-        --transition: all 0.3s ease;
-    }
-    
-    body {
-        background-color: var(--light);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        transition: var(--transition);
-    }
-    
-    /* Classe pour sidebar réduit */
-    body.sidebar-collapsed {
-        padding-left: var(--sidebar-collapsed-width) !important;
-    }
-    
-    body.sidebar-collapsed .header {
-        left: var(--sidebar-collapsed-width) !important;
-    }
-    
-    body.sidebar-collapsed .main-content {
-        margin-left: var(--sidebar-collapsed-width) !important;
-    }
-    
-    body.sidebar-collapsed .sidebar-toggle i {
-        transform: rotate(180deg);
-    }
-    </style>
-
     <style>
         /* Variables CSS modernes */
         :root {
@@ -880,7 +799,7 @@ if ($showJustificationModal) {
             display: grid;
             grid-template-columns: 1fr;
             gap: 1.5rem;
-            padding: 0.5rem;
+            padding: 1.5rem;
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -897,7 +816,7 @@ if ($showJustificationModal) {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             backdrop-filter: blur(10px);
             border-radius: var(--radius);
-            padding: 0.5rem 1.5rem;
+            padding: 1rem 1.5rem;
             margin-bottom: 1.5rem;
             border: none;
             box-shadow: var(--shadow-lg);
@@ -958,7 +877,7 @@ if ($showJustificationModal) {
         .profile-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 0.5rem;
+            padding: 2rem;
             margin-bottom: 1.5rem;
             border: 1px solid var(--border);
             transition: var(--transition);
@@ -1009,7 +928,7 @@ if ($showJustificationModal) {
         .detail-item {
             background: var(--light);
             border-radius: var(--radius);
-            padding: 0.5rem;
+            padding: 1.5rem;
             transition: var(--transition);
             border: 1px solid transparent;
         }
@@ -1035,7 +954,7 @@ if ($showJustificationModal) {
         .stats-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 0.5rem;
+            padding: 2rem;
             margin-bottom: 1.5rem;
             border: 1px solid var(--border);
         }
@@ -1057,7 +976,7 @@ if ($showJustificationModal) {
         .stat-item {
             background: white;
             border-radius: var(--radius);
-            padding: 0.5rem;
+            padding: 1.5rem;
             border: 1px solid var(--border);
             transition: var(--transition);
         }
@@ -1102,7 +1021,7 @@ if ($showJustificationModal) {
         .calendar-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 0.5rem;
+            padding: 2rem;
             border: 1px solid var(--border);
         }
         
@@ -1116,7 +1035,7 @@ if ($showJustificationModal) {
         .calendar-container {
             background: var(--light);
             border-radius: var(--radius);
-            padding: 0.5rem;
+            padding: 1rem;
             min-height: 400px;
         }
         
@@ -1124,7 +1043,7 @@ if ($showJustificationModal) {
         .pointages-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 0.5rem;
+            padding: 2rem;
             border: 1px solid var(--border);
         }
         
@@ -1137,7 +1056,7 @@ if ($showJustificationModal) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.5rem;
+            padding: 1rem;
             border-bottom: 1px solid var(--border);
             transition: var(--transition);
         }
@@ -1188,7 +1107,7 @@ if ($showJustificationModal) {
         .badge-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 0.5rem;
+            padding: 2rem;
             border: 1px solid var(--border);
             transition: var(--transition);
         }
@@ -1234,7 +1153,7 @@ if ($showJustificationModal) {
         .info-section {
             background: white;
             border-radius: var(--radius-lg);
-            padding: 0.5rem;
+            padding: 2rem;
             border: 1px solid var(--border);
         }
         
@@ -1299,7 +1218,7 @@ if ($showJustificationModal) {
         /* Responsive Design */
         @media (max-width: 768px) {
             .employe-layout {
-                padding: 0.5rem;
+                padding: 1rem;
                 gap: 1rem;
             }
             
@@ -1309,7 +1228,7 @@ if ($showJustificationModal) {
             .pointages-section,
             .badge-section,
             .info-section {
-                padding: 0.5rem;
+                padding: 1.5rem;
             }
             
             .section-header {
@@ -1360,7 +1279,7 @@ if ($showJustificationModal) {
             .stat-item,
             .detail-item,
             .info-item {
-                padding: 0.5rem;
+                padding: 1rem;
             }
             
             .profile-avatar {
@@ -1438,7 +1357,9 @@ if ($showJustificationModal) {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             color: white;
         }
-            /* Overlay global pour dropdowns mobiles */
+    </style>
+        /* Overlay utilisé par les dropdowns mobiles */
+        <style>
             #dropdownOverlay {
                 position: fixed;
                 inset: 0;
@@ -1476,40 +1397,103 @@ if ($showJustificationModal) {
     </div>
     
     <div class="employe-layout">
-    <!-- Header Principal -->
-        <header class="header">
-            <div class="header-container">
-                <!-- Bouton Toggle Sidebar -->
-                <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
-                    <i class="fas fa-bars"></i>
-                </button>
-                
-                <!-- Logo -->
-                <div class="header-logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-fingerprint"></i>
-                    </div>
-                    <div class="logo-text">
-                        <h1>CHAKEDA</h1>
-                        <p class="logo-subtitle">Système de Pointage</p>
-                    </div>
-                </div>
-                
-                <!-- Actions Utilisateur -->
-                <div class="header-actions">
-                    <!-- Notifications -->
-                    <div class="notification-wrapper">
-                        <button class="notification-btn" id="notificationBtn">
-                            <i class="fas fa-bell"></i>
-                            <span class="notification-badge">3</span>
-                        </button>
+        <!-- Header Principal -->
+        <header class="employe-header">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-md-8 col-lg-9">
+                        <div class="d-flex align-items-center gap-3">
+                            <!-- Logo/Brand -->
+                            <div class="brand-logo d-none d-md-flex align-items-center">
+                                <div class="logo-icon bg-white rounded-circle p-2 me-2">
+                                    <i class="fas fa-user-clock text-primary"></i>
+                                </div>
+                                <span class="text-white fw-bold fs-5">Xpert Employee</span>
+                            </div>
+                            
+                            <!-- Titre + Breadcrumb -->
+                            <div class="d-flex flex-column">
+                                <h1 class="h5 text-white mb-1">
+                                    <i class="fas fa-user-circle me-2"></i>Mon Espace Personnel
+                                </h1>
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item">
+                                            <a href="#" class="text-white text-decoration-none">
+                                                <i class="fas fa-home me-1"></i>Accueil
+                                            </a>
+                                        </li>
+                                        <li class="breadcrumb-item active text-white" aria-current="page">
+                                            Tableau de bord
+                                        </li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Utilisateur -->
-                    <div class="user-dropdown">
-                        <button class="user-btn" id="userBtn">
-                            <div class="user-avatar">
-                                <?= $userInitials ?>
+                    <div class="col-md-4 col-lg-3">
+                        <!-- Actions Header -->
+                        <div class="d-flex align-items-center justify-content-end gap-3">
+                            <!-- Notifications -->
+                            <div class="dropdown">
+                                <button class="btn btn-glass position-relative rounded-circle p-2" 
+                                        id="notificationDropdown" 
+                                        data-bs-toggle="dropdown" 
+                                        aria-expanded="false" 
+                                        aria-label="Notifications">
+                                    <i class="fas fa-bell"></i>
+                                    <?php if (!empty($notifications)): ?>
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger pulse" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">
+                                            <?= count($notifications) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </button>
+
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg glass-effect border-0" aria-labelledby="notificationDropdown" style="width: 320px;">
+                                    <li class="dropdown-header p-3">
+                                        <h6 class="mb-1 fw-bold">
+                                            <i class="fas fa-bell me-2 text-primary"></i>Notifications
+                                        </h6>
+                                        <small class="text-muted"><?= count($notifications) ?> notification(s)</small>
+                                    </li>
+                                    <li class="px-2">
+                                        <div style="max-height: 300px; overflow-y: auto;">
+                                            <?php if (!empty($notifications)): ?>
+                                                <?php foreach (array_slice($notifications, 0, 5) as $notification): ?>
+                                                    <a href="notifications.php?id=<?= $notification['id'] ?>" 
+                                                       class="dropdown-item d-flex align-items-start p-3 mb-2 rounded hover-lift text-decoration-none">
+                                                        <div class="flex-shrink-0 me-3">
+                                                            <div class="rounded-circle p-2 bg-<?= $notification['type'] === 'urgence' ? 'danger' : 'primary' ?> text-white">
+                                                                <i class="fas fa-<?= $notification['type'] === 'urgence' ? 'exclamation-triangle' : 'bell' ?>"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex-grow-1">
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <strong class="small"><?= htmlspecialchars($notification['titre'] ?? 'Notification') ?></strong>
+                                                                <span class="small text-muted"><?= date('H:i', strtotime($notification['date'] ?? 'now')) ?></span>
+                                                            </div>
+                                                            <p class="small text-muted mb-0"><?= htmlspecialchars($notification['contenu'] ?? 'Contenu indisponible') ?></p>
+                                                        </div>
+                                                    </a>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <div class="text-center py-4 text-muted">
+                                                    <i class="fas fa-bell-slash fa-2x mb-3"></i>
+                                                    <p class="mb-1 fw-medium">Aucune notification</p>
+                                                    <small>Vous serez alerté des nouveaux événements</small>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </li>
+                                    <?php if (!empty($notifications)): ?>
+                                        <li class="p-3 border-top">
+                                            <a href="notifications.php" class="btn btn-outline-primary btn-sm w-100">
+                                                <i class="fas fa-list me-1"></i> Voir toutes
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
                             </div>
 
                             <!-- Menu Utilisateur -->
@@ -1526,7 +1510,7 @@ if ($showJustificationModal) {
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end glass-effect shadow-lg border-0 p-2">
                                     <li>
-                                        <a class="dropdown-item d-flex align-items-center py-2 px-3 rounded" href="#" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                                        <a class="dropdown-item d-flex align-items-center py-2 px-3 rounded" href="profil_employe.php">
                                             <i class="fas fa-user text-primary me-3"></i>
                                             <span>Mon profil</span>
                                         </a>
@@ -1552,50 +1536,11 @@ if ($showJustificationModal) {
                                     </li>
                                 </ul>
                             </div>
-                        </button>
-                        
-                        <div class="dropdown-menu">
-                            <div class="dropdown-header">
-                                <div class="user-avatar-lg">
-                                    <?= $userInitials ?>
-                                </div>
-                                <div>
-                                    <h6><?= $userName ?></h6>
-                                    <small><?= $employe ? 'Employe' : 'Admin' ?></small>
-                                </div>
-                            </div>
-                            
-                            <div class="dropdown-divider"></div>
-                            
-                            <a href="profil_admin.php" class="dropdown-item">
-                                <i class="fas fa-user-circle"></i>
-                                <span>Mon profil</span>
-                            </a>
-                            
-                            <a href="admin_settings.php" class="dropdown-item">
-                                <i class="fas fa-cog"></i>
-                                <span>Paramètres</span>
-                            </a>
-                            
-                            <?php if ($employe): ?>
-                            <a href="admin_system.php" class="dropdown-item">
-                                <i class="fas fa-shield-alt"></i>
-                                <span>Système</span>
-                            </a>
-                            <?php endif; ?>
-                            
-                            <div class="dropdown-divider"></div>
-                            
-                            <a href="logout.php" class="dropdown-item logout">
-                                <i class="fas fa-sign-out-alt"></i>
-                                <span>Déconnexion</span>
-                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </header>
-
 
         <!-- Contenu Principal -->
         <main class="main-content">
@@ -2174,7 +2119,10 @@ $modalQrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" .
 
 <!-- Justification modal is handled on the scanner page (scan_qr.php) via JS; removed server-side auto-modal here to avoid duplicate UI -->
 
-<!-- footer inclusion moved to the end of the file to ensure scripts are placed before closing body/html -->
+<?php 
+// Inclure le pied de page
+include 'partials/footer.php'; 
+?>
 
     <!-- Scripts -->
     <script>
@@ -2284,7 +2232,7 @@ $modalQrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" .
     <?php endif; ?>
 
     <!-- Note: badge expiry check is scheduled in client script (`assets/js/script.js`) -->
-
+</script>
 <script>
 // Ensure dropdown overlay and open menus are cleared when navigating months
 document.addEventListener('DOMContentLoaded', function() {
@@ -2367,97 +2315,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('badge-success-message').innerHTML = '<div class="alert alert-danger mt-2">' + (data.message || 'Erreur lors de la génération du badge') + '</div>';
                     btn.disabled = false;
                 }
-            }).catch(() => {
+            })
+            .catch(() => {
                 document.getElementById('badge-loader').style.display = 'none';
                 document.getElementById('badge-success-message').innerHTML = '<div class="alert alert-danger mt-2">Erreur réseau</div>';
                 btn.disabled = false;
             });
-
-//Profile and password save handlers for employee dashboard//
-document.addEventListener('DOMContentLoaded', function() {
-    const saveProfileBtn = document.getElementById('saveProfileBtn');
-    if (saveProfileBtn) {
-        saveProfileBtn.addEventListener('click', async function() {
-            const payload = {
-                data: {
-                    prenom: document.getElementById('editPrenom').value.trim(),
-                    nom: document.getElementById('editNom').value.trim(),
-                    telephone: document.getElementById('editTelephone').value.trim(),
-                    adresse: document.getElementById('editAdresse').value.trim(),
-                    email: document.getElementById('editEmail').value.trim()
-                }
-            };
-
-            const feedbackEl = document.getElementById('profileSaveFeedback');
-            feedbackEl.innerHTML = '';
-
-            try {
-                const res = await fetch(window.location.pathname, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const json = await res.json();
-                if (json.success) {
-                    feedbackEl.innerHTML = '<div class="alert alert-success">Profil mis à jour avec succès.</div>';
-                    // Update visible name in header
-                    const nameEls = document.querySelectorAll('.profile-name, #userDisplayName, .user-name');
-                    nameEls.forEach(el => { try { el.textContent = payload.data.prenom + ' ' + payload.data.nom; } catch(e){} });
-                } else {
-                    feedbackEl.innerHTML = '<div class="alert alert-danger">Erreur lors de la mise à jour.</div>';
-                }
-            } catch (err) {
-                feedbackEl.innerHTML = '<div class="alert alert-danger">Erreur réseau.</div>';
-            }
         });
-    }
-
-    // Password save
-    const savePasswordBtn = document.getElementById('savePasswordBtn');
-    if (savePasswordBtn) {
-        savePasswordBtn.addEventListener('click', async function() {
-            const current = document.getElementById('currentPassword').value;
-            const nv = document.getElementById('newPassword').value;
-            const confirm = document.getElementById('confirmPassword').value;
-
-            const msg = document.getElementById('passwordMatch');
-            msg.innerHTML = '';
-
-            if (nv.length < 8) { msg.innerHTML = '<div class="text-danger">Le mot de passe doit comporter au moins 8 caractères.</div>'; return; }
-            if (nv !== confirm) { msg.innerHTML = '<div class="text-danger">Les mots de passe ne correspondent pas.</div>'; return; }
-
-            try {
-                const res = await fetch(window.location.pathname, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ field: 'mot_de_passe', value: nv })
-                });
-                const json = await res.json();
-                if (json.success) {
-                    msg.innerHTML = '<div class="text-success">Mot de passe mis à jour.</div>';
-                    // Clear fields
-                    document.getElementById('currentPassword').value = '';
-                    document.getElementById('newPassword').value = '';
-                    document.getElementById('confirmPassword').value = '';
-                } else {
-                    msg.innerHTML = '<div class="text-danger">Erreur: ' + (json.message || 'Erreur inconnue') + '</div>';
-                }
-            } catch (err) {
-                msg.innerHTML = '<div class="text-danger">Erreur réseau.</div>';
-            }
-        });
-    }
-
-    // Toggle password visibility
-    document.querySelectorAll('.toggle-password').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const target = document.getElementById(btn.dataset.target);
-            if (!target) return;
-            if (target.type === 'password') { target.type = 'text'; } else { target.type = 'password'; }
-        });
-    });
-});
-                    });
     }
 });
 // Gestion du dropdown
@@ -2575,4 +2439,6 @@ document.addEventListener('DOMContentLoaded', function() {
     } // end if dropdownBtn
 });
 </script>
-<?php include 'partials/footer.php'; ?>
+
+</body>
+</html>

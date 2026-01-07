@@ -1,687 +1,602 @@
 <?php
-// PARTIAL HEADER : balises <head>, liens CSS, navigation principale
+// ===============================
+// PARTIAL HEADER — XPERT POINTAGE
+// ===============================
 
-$theme = $APP_SETTINGS['theme'] ?? 'clair';
-$font_size = $APP_SETTINGS['font_size'] ?? 100;
+$theme      = $APP_SETTINGS['theme'] ?? 'clair';
+$font_size  = $APP_SETTINGS['font_size'] ?? 100;
 
-// Informations utilisateur
-$userName = isset($_SESSION['prenom']) && isset($_SESSION['nom']) 
-    ? htmlspecialchars($_SESSION['prenom'] . ' ' . $_SESSION['nom'])
-    : 'Administrateur';
-$userInitials = isset($_SESSION['prenom'], $_SESSION['nom'])
-    ? strtoupper(substr($_SESSION['prenom'], 0, 1) . substr($_SESSION['nom'], 0, 1))
-    : 'AD';
-$userRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'admin';
+// ===============================
+// UTILISATEUR
+// ===============================
+$userFirstName = $_SESSION['prenom'] ?? 'Admin';
+$userLastName  = $_SESSION['nom'] ?? '';
+$userName      = htmlspecialchars(trim($userFirstName . ' ' . $userLastName));
+$userEmail     = htmlspecialchars($_SESSION['email'] ?? 'admin@xpertpro.com');
+$userRole      = $_SESSION['role'] ?? 'admin';
+
+$userInitials  = strtoupper(
+    substr($userFirstName, 0, 1) . substr($userLastName, 0, 1)
+);
+
+// ===============================
+// RÔLE LISIBLE
+// ===============================
+$displayRole = match ($userRole) {
+    'super_admin' => 'Super Administrateur',
+    'admin'       => 'Administrateur',
+    'manager'     => 'Gestionnaire',
+    'rh'          => 'Ressources Humaines',
+    'employe'     => 'Employé',
+    default       => 'Utilisateur'
+};
+
 $isSuperAdmin = ($userRole === 'super_admin');
-$userFirstName = isset($_SESSION['prenom']) ? htmlspecialchars($_SESSION['prenom']) : 'Admin';
+
+// ===============================
+// ÉTAT DE PAUSE (exemple - à adapter selon votre logique métier)
+// ===============================
+$isOnBreak = $_SESSION['is_on_break'] ?? false;
+$breakTimeRemaining = $_SESSION['break_time_remaining'] ?? 0; // en secondes
 ?>
 <!DOCTYPE html>
 <html lang="fr" data-theme="<?= htmlspecialchars($theme) ?>">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?? 'Xpert Pro - Dashboard' ?></title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" 
-          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/main.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <?php if (isset($additionalCSS)): 
-        $basePathCss = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
-    ?>
-        <?php foreach ($additionalCSS as $css): 
-            $isExternalCss = preg_match('#^https?://#i', $css);
-            $href = $isExternalCss ? $css : ($basePathCss . '/' . ltrim($css, '/'));
-        ?>
-            <link rel="stylesheet" href="<?= htmlspecialchars($href) ?>">
-        <?php endforeach; ?>
-    <?php endif; ?>
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/img/xpertpro.png">
-    
-    <style>
-    :root { 
-        font-size: <?= intval($font_size) ?>%; 
-        --primary: #0672e4;
-        --primary-dark: #3a56d4;
-        --primary-light: #eef2ff;
-        --danger: #ef4444;
-        --dark: #1e293b;
-        --light: #f8fafc;
-        --border: #e2e8f0;
-        --text: #ffff;
-        --text-light: #64748b;
-    }
-    
-    body {
-        background-color: var(--light);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    </style>
-</head>
-<body class="<?= $bodyClass ?? '' ?>">
+<title><?= $pageTitle ?? 'XPERT POINTAGE' ?></title>
 
-<!-- Header avec dropdown Bootstrap -->
-<header class="header-dashboard">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom py-2">
-        <div class="container-fluid px-3">
-            <!-- Logo -->
-            <a class="navbar-brand d-flex align-items-center" href="admin_dashboard_unifie.php">
-                <div class="logo-wrapper me-2">
-                    <i class="fas fa-clock text-primary fs-4"></i>
-                </div>
-                <div>
-                    <div class="fw-bold text-dark">Xpert Pro</div>
-                    <div class="small text-muted">Dashboard</div>
-                </div>
-            </a>
-
-            <!-- Dropdown Utilisateur - Bootstrap -->
-            <div class="dropdown">
-                <button class="btn user-dropdown-btn d-flex align-items-center" 
-                        type="button" 
-                        id="userDropdownBtn"
-                        data-bs-toggle="dropdown" 
-                        aria-expanded="false">
-                    
-                    <!-- Avatar selon l'écran -->
-                    <div class="user-avatar-wrapper">
-                        <div class="user-avatar d-none d-lg-flex">
-                            <?= $userInitials ?>
-                        </div>
-                        <div class="user-avatar-mobile d-lg-none">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </div>
-                    
-                    <!-- Infos utilisateur (desktop seulement) -->
-                    <div class="user-info d-none d-lg-block text-start ms-2 me-3">
-                        <div class="user-name fw-medium"><?= $userFirstName ?></div>
-                        <div class="user-role small text-muted">
-                            <?= $isSuperAdmin ? 'Super Admin' : 'Admin' ?>
-                        </div>
-                    </div>
-                    
-                    <!-- Icône flèche -->
-                    <i class="fas fa-chevron-down dropdown-arrow ms-1"></i>
-                </button>
-                
-                <!-- Menu Dropdown -->
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" 
-                    aria-labelledby="userDropdownBtn">
-                    
-                    <!-- Header -->
-                    <li class="dropdown-header p-3 bg-light rounded-top">
-                        <div class="d-flex align-items-center">
-                            <div class="user-avatar-lg me-3">
-                                <?= $userInitials ?>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-semibold"><?= $userName ?></h6>
-                                <small class="text-muted">
-                                    <?= $isSuperAdmin ? 'Super Administrateur' : 'Administrateur' ?>
-                                </small>
-                            </div>
-                        </div>
-                    </li>
-                    
-                    <li><hr class="dropdown-divider mx-3 my-2"></li>
-                    
-                    <!-- Liens -->
-                    <li>
-                        <a class="dropdown-item py-2 px-3" href="profil_admin.php">
-                            <i class="fas fa-user-circle me-3 text-primary"></i>
-                            Mon profil
-                        </a>
-                    </li>
-                    
-                    <li>
-                        <a class="dropdown-item py-2 px-3" href="admin_settings.php">
-                            <i class="fas fa-cog me-3 text-primary"></i>
-                            Paramètres
-                        </a>
-                    </li>
-                    
-                    <?php if ($isSuperAdmin): ?>
-                    <li>
-                        <a class="dropdown-item py-2 px-3" href="admin_system.php">
-                            <i class="fas fa-server me-3 text-primary"></i>
-                            Système
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <li><hr class="dropdown-divider mx-3 my-2"></li>
-                    
-                    <!-- Déconnexion -->
-                    <li>
-                        <a class="dropdown-item py-2 px-3 text-danger" href="logout.php">
-                            <i class="fas fa-sign-out-alt me-3"></i>
-                            Déconnexion
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-</header>
-
-<!-- Contenu principal -->
-<main class="main-content-container">
-
-<!-- Overlay pour mobile (quand dropdown ouvert) -->
-<div class="dropdown-overlay" id="dropdownOverlay"></div>
-
-<!-- Scripts -->
-<!-- Bootstrap JS Bundle (avec Popper) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
-        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" 
-        crossorigin="anonymous"></script>
-
-<script>
-// Gestion du dropdown
-document.addEventListener('DOMContentLoaded', function() {
-    const dropdownBtn = document.getElementById('userDropdownBtn');
-    const dropdown = dropdownBtn.closest('.dropdown');
-    const dropdownMenu = dropdown.querySelector('.dropdown-menu');
-    const dropdownArrow = dropdown.querySelector('.dropdown-arrow');
-    const overlay = document.getElementById('dropdownOverlay');
-    
-    // Vérifier que Bootstrap est chargé
-    if (typeof bootstrap !== 'undefined') {
-        // Initialiser le dropdown Bootstrap
-        const bsDropdown = new bootstrap.Dropdown(dropdownBtn);
-        
-        // Animation de la flèche
-        dropdownBtn.addEventListener('show.bs.dropdown', function() {
-            dropdownArrow.style.transform = 'rotate(180deg)';
-            dropdownArrow.style.transition = 'transform 0.3s ease';
-            
-            // Afficher l'overlay sur mobile
-            if (window.innerWidth < 992) {
-                overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-        });
-        
-        dropdownBtn.addEventListener('hide.bs.dropdown', function() {
-            dropdownArrow.style.transform = 'rotate(0deg)';
-            
-            // Cacher l'overlay sur mobile
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-        
-        // Fermer le dropdown en cliquant sur l'overlay (mobile)
-        overlay.addEventListener('click', function() {
-            bsDropdown.hide();
-        });
-        
-        // Fermer le dropdown en cliquant en dehors (desktop)
-        document.addEventListener('click', function(event) {
-            if (!dropdown.contains(event.target) && dropdownMenu.classList.contains('show')) {
-                bsDropdown.hide();
-            }
-        });
-        
-        // Empêcher la fermeture quand on clique dans le dropdown
-        dropdownMenu.addEventListener('click', function(event) {
-            event.stopPropagation();
-        });
-        
-    } else {
-        console.error('Bootstrap non chargé');
-        
-        // Fallback si Bootstrap n'est pas chargé
-        dropdownBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const isOpen = dropdownMenu.classList.contains('show');
-            
-            // Fermer tous les autres dropdowns
-            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                if (menu !== dropdownMenu) {
-                    menu.classList.remove('show');
-                    menu.previousElementSibling.querySelector('.dropdown-arrow').style.transform = 'rotate(0deg)';
-                }
-            });
-            
-            // Toggle ce dropdown
-            dropdownMenu.classList.toggle('show');
-            dropdownArrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-            
-            // Gérer overlay mobile
-            if (window.innerWidth < 992) {
-                if (!isOpen) {
-                    overlay.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                }
-            }
-        });
-        
-        // Fermer au clic extérieur
-        document.addEventListener('click', function(event) {
-            if (!dropdown.contains(event.target) && dropdownMenu.classList.contains('show')) {
-                dropdownMenu.classList.remove('show');
-                dropdownArrow.style.transform = 'rotate(0deg)';
-                overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        });
-        
-        // Overlay mobile
-        overlay.addEventListener('click', function() {
-            dropdownMenu.classList.remove('show');
-            dropdownArrow.style.transform = 'rotate(0deg)';
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    }
-    
-    // Gérer le redimensionnement
-    window.addEventListener('resize', function() {
-        if (window.innerWidth >= 992) {
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    });
-});
-</script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* ======
-   VARIABLES GLOBALES
-====== */
 :root {
-    --primary: #0672e4;
-    --primary-dark: #3a56d4;
-    --primary-light: #eef2ff;
-    --danger: #ef4444;
+    font-size: <?= (int)$font_size ?>%;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
     --dark: #1e293b;
-    --light: #f8fafc;
     --border: #e2e8f0;
-    --text: #ffff;
-    --text-light: #64748b;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    --radius: 8px;
-    --transition: all 0.3s ease;
+    --bg: #f5f7fa;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
 }
 
-/* ======
-   HEADER
-====== */
-.header-dashboard {
-    position: sticky;
-    top: 0;
-    z-index: 1030;
-    background: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.navbar {
-    min-height: 70px;
-}
-
-.logo-wrapper {
-    width: 40px;
-    height: 40px;
-    background: var(--primary-light);
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ======
-   BOUTON DROPDOWN
-====== */
-.user-dropdown-btn {
-    background: white !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    padding: 0.5rem 1rem !important;
-    color: var(--text) !important;
-    transition: var(--transition) !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-.user-dropdown-btn:hover {
-    background: var(--primary-light) !important;
-    border-color: var(--primary) !important;
-    color: var(--primary) !important;
-}
-
-.user-dropdown-btn:focus {
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15) !important;
-    border-color: var(--primary) !important;
-}
-
-.user-dropdown-btn[aria-expanded="true"] {
-    background: var(--primary-light) !important;
-    border-color: var(--primary) !important;
-    color: var(--primary) !important;
-}
-
-/* ======
-   AVATARS
-====== */
-.user-avatar-wrapper {
-    position: relative;
-}
-
-.user-avatar {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.user-avatar-mobile {
-    width: 36px;
-    height: 36px;
-    background: var(--primary);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-}
-
-.user-avatar-lg {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-/* ======
-   INFOS UTILISATEUR
-====== */
-.user-info {
-    min-width: 100px;
-}
-
-.user-name {
-    font-size: 0.95rem;
-    line-height: 1.2;
-    color: var(--dark);
-}
-
-.user-role {
-    font-size: 0.8rem;
-    line-height: 1.2;
-}
-
-/* ======
-   ICÔNE FLÈCHE
-====== */
-.dropdown-arrow {
-    color: var(--text-light);
-    font-size: 0.8rem;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-left: 4px;
-}
-
-/* ======
-   MENU DROPDOWN
-====== */
-.dropdown-menu {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 0.5rem;
-    box-shadow: var(--shadow-lg);
-    min-width: 280px;
-    animation: dropdownFadeIn 0.2s ease-out;
-}
-
-@keyframes dropdownFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.dropdown-header {
-    background: var(--primary-light);
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem !important;
-}
-
-.dropdown-header h6 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.dropdown-header small {
-    font-size: 0.85rem;
-    color: var(--text-light);
-}
-
-.dropdown-divider {
-    border-color: var(--border);
-    opacity: 0.5;
-    margin: 0.5rem 1rem;
-}
-
-/* ======
-   ITEMS DROPDOWN
-====== */
-.dropdown-item {
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    margin: 0.15rem 0;
-    font-size: 0.95rem;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-}
-
-.dropdown-item:hover {
-    background: var(--primary-light);
-    color: var(--primary);
-    transform: translateX(3px);
-}
-
-.dropdown-item:focus {
-    background: var(--primary-light);
-    color: var(--primary);
-    outline: 2px solid var(--primary);
-    outline-offset: -2px;
-}
-
-.dropdown-item i {
-    width: 20px;
-    text-align: center;
-    font-size: 1.1rem;
-    margin-right: 12px;
-}
-
-.dropdown-item.text-danger {
-    color: var(--danger) !important;
-}
-
-.dropdown-item.text-danger:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger) !important;
-}
-
-/* ======
-   OVERLAY MOBILE
-====== */
-.dropdown-overlay {
+/* ================= HEADER ================= */
+.main-header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1029;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    height: 70px;
+    background: linear-gradient(90deg, var(--primary), #3b82f6);
+    z-index: 1000;
+    box-shadow: 0 2px 12px rgba(0,0,0,.15);
 }
 
-.dropdown-overlay.active {
+.header-container {
+    height: 100%;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ===== LEFT ===== */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.toggle-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255,255,255,.15);
+    color: #fff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: .2s;
+}
+
+.toggle-btn:hover {
+    background: rgba(255,255,255,.25);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 90;
+    display: none;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+.header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .5px;
+}
+
+/* ===== RIGHT ===== */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Minuteur de pause */
+.break-timer {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 20px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.break-timer:hover {
+    background: rgba(255,255,255,.2);
+}
+
+.break-timer.active {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--danger);
+    animation: pulse 2s infinite;
+}
+
+.break-timer .icon {
+    font-size: 12px;
+}
+
+.break-timer .time {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Dropdown amélioré */
+.user-profile-dropdown {
+    position: relative;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 10px;
+    transition: .2s;
+    background: transparent;
+    border: none;
+    color: inherit;
+}
+
+.user-profile:hover {
+    background: rgba(255,255,255,.12);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--primary);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.user-role {
+    font-size: 12px;
+    color: rgba(255,255,255,.8);
+}
+
+/* Dropdown menu */
+.dropdown-menu-custom {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.15);
+    border: 1px solid var(--border);
+    z-index: 1001;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+}
+
+.dropdown-menu-custom.show {
     display: block;
     opacity: 1;
+    transform: translateY(0);
 }
 
-/* ======
-   RESPONSIVE MOBILE
-====== */
-@media (max-width: 991.98px) {
-    /* Header fixe */
-    .header-dashboard {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 70px;
+.dropdown-header-custom {
+    padding: 16px;
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.dropdown-body-custom {
+    padding: 8px 0;
+}
+
+.dropdown-item-custom {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    color: var(--dark);
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+}
+
+.dropdown-item-custom:hover {
+    background: #f1f5f9;
+    color: var(--primary);
+}
+
+.dropdown-item-custom i {
+    width: 20px;
+    margin-right: 10px;
+    color: #64748b;
+}
+
+.dropdown-divider-custom {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+}
+
+/* ===== CONTENT ===== */
+.main-content {
+    margin-top: 70px;
+    margin-left: 260px;
+    min-height: calc(100vh - 70px);
+    background: var(--bg);
+    transition: margin-left .3s ease;
+}
+
+.main-content.sidebar-collapsed {
+    margin-left: 70px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+    .main-content {
+        margin-left: 0 !important;
     }
     
-    /* Ajustement du bouton */
-    .user-dropdown-btn {
-        padding: 0.4rem 0.8rem !important;
-    }
-    
-    /* Cacher le texte sur mobile */
     .user-info {
-        display: none !important;
+        display: none;
     }
     
-    /* Logo plus petit */
-    .logo-wrapper {
+    .break-timer .text {
+        display: none;
+    }
+    
+    .break-timer {
+        min-width: auto;
+        padding: 6px;
+    }
+}
+
+@media (max-width: 576px) {
+    .header-container {
+        padding: 0 15px;
+    }
+    
+    .header-title {
+        font-size: 18px;
+    }
+    
+    .toggle-btn {
         width: 36px;
         height: 36px;
     }
-    
-    .navbar-brand .fw-bold {
-        font-size: 1.1rem;
-    }
-    
-    .navbar-brand .small {
-        font-size: 0.75rem;
-    }
-    
-    /* Dropdown mobile */
-    .dropdown-menu {
-        position: fixed !important;
-        top: 75px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: calc(100% - 30px) !important;
-        max-width: 400px !important;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        border-radius: 16px;
-        z-index: 1031 !important;
-    }
-    
-    /* Espacement pour le header fixe */
-    .main-content-container {
-        margin-top: 70px;
-    }
-}
-
-/* Très petits écrans */
-@media (max-width: 575.98px) {
-    .container-fluid {
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }
-    
-    .logo-wrapper {
-        width: 32px;
-        height: 32px;
-    }
-    
-    .navbar-brand .fw-bold {
-        font-size: 1rem;
-    }
-    
-    .user-dropdown-btn {
-        padding: 0.35rem 0.7rem !important;
-    }
-    
-    .dropdown-menu {
-        width: calc(100% - 20px) !important;
-        border-radius: 14px;
-    }
-}
-
-/* ======
-   CONTENU PRINCIPAL
-====== */
-.main-content-container {
-    min-height: calc(100vh - 70px);
-    padding: 0.5rem;
-    background: var(--light);
-}
-
-@media (max-width: 991.98px) {
-    .main-content-container {
-        padding: 0.5rem;
-        min-height: calc(100vh - 70px);
-    }
-}
-
-/* ======
-   ACCESSIBILITÉ
-====== */
-@media (prefers-reduced-motion: reduce) {
-    .dropdown-arrow,
-    .dropdown-menu,
-    .dropdown-item,
-    .dropdown-overlay {
-        transition: none !important;
-        animation: none !important;
-    }
-}
-
-/* ======
-   IMPRESSION
-====== */
-@media print {
-    .header-dashboard,
-    .dropdown-overlay {
-        display: none !important;
-    }
-    
-    .main-content-container {
-        margin-top: 0;
-        padding: 0;
-        min-height: auto;
-    }
 }
 </style>
+</head>
+
+<body>
+
+<header class="main-header">
+    <div class="header-container">
+
+        <div class="header-left">
+            <div class="header-title">XPERT POINTAGE</div>
+            <button class="toggle-btn" id="toggleSidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="header-right">
+            <!-- Minuteur de pause -->
+            <div class="break-timer <?= $isOnBreak ? 'active' : '' ?>" id="breakTimer">
+                <span class="icon"><i class="fas <?= $isOnBreak ? 'fa-coffee' : 'fa-clock' ?>"></i></span>
+                <span class="time" id="breakTimeDisplay">
+                    <?= $isOnBreak ? gmdate("i:s", $breakTimeRemaining) : '00:00' ?>
+                </span>
+                <span class="text"><?= $isOnBreak ? 'En pause' : 'Pause' ?></span>
+            </div>
+
+            <!-- Dropdown utilisateur -->
+            <div class="user-profile-dropdown">
+                <button class="user-profile" id="userDropdownToggle">
+                    <div class="user-avatar"><?= $userInitials ?></div>
+                    <div class="user-info">
+                        <div class="user-name"><?= htmlspecialchars($userFirstName) ?></div>
+                        <div class="user-role"><?= $displayRole ?></div>
+                    </div>
+                    <i class="fas fa-chevron-down ms-2" style="font-size: 12px; color: rgba(255,255,255,.7);"></i>
+                </button>
+
+                <div class="dropdown-menu-custom" id="userDropdownMenu">
+                    <div class="dropdown-header-custom">
+                        <strong><?= $userName ?></strong><br>
+                        <small><?= $userEmail ?></small>
+                    </div>
+                    
+                    <div class="dropdown-body-custom">
+                        <a href="profil.php" class="dropdown-item-custom">
+                            <i class="fas fa-user"></i>Mon profil
+                        </a>
+                        <a href="parametres.php" class="dropdown-item-custom">
+                            <i class="fas fa-cog"></i>Paramètres
+                        </a>
+                        
+                        <?php if ($isSuperAdmin): ?>
+                        <a href="administration.php" class="dropdown-item-custom">
+                            <i class="fas fa-shield-alt"></i>Administration
+                        </a>
+                        <?php endif; ?>
+                        
+                        <div class="dropdown-divider-custom"></div>
+                        
+                        <button class="dropdown-item-custom" id="toggleBreakBtn">
+                            <i class="fas <?= $isOnBreak ? 'fa-play' : 'fa-pause' ?>"></i>
+                            <?= $isOnBreak ? 'Reprendre le travail' : 'Prendre une pause' ?>
+                        </button>
+                        
+                        <div class="dropdown-divider-custom"></div>
+                        
+                        <a href="logout.php" class="dropdown-item-custom text-danger">
+                            <i class="fas fa-sign-out-alt"></i>Déconnexion
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+// ===============================
+// GESTION DU DROPDOWN
+// ===============================
+const userDropdownToggle = document.getElementById('userDropdownToggle');
+const userDropdownMenu = document.getElementById('userDropdownMenu');
+let dropdownOpen = false;
+
+// Ouvrir/fermer le dropdown
+userDropdownToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownOpen = !dropdownOpen;
+    userDropdownMenu.classList.toggle('show', dropdownOpen);
+});
+
+// Fermer le dropdown en cliquant à l'extérieur
+document.addEventListener('click', (e) => {
+    if (dropdownOpen && !userDropdownToggle.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+        dropdownOpen = false;
+        userDropdownMenu.classList.remove('show');
+    }
+});
+
+// Fermer le dropdown en appuyant sur ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dropdownOpen) {
+        dropdownOpen = false;
+        userDropdownMenu.classList.remove('show');
+    }
+});
+
+// ===============================
+// MINUTEUR DE PAUSE
+// ===============================
+const breakTimer = document.getElementById('breakTimer');
+const breakTimeDisplay = document.getElementById('breakTimeDisplay');
+const toggleBreakBtn = document.getElementById('toggleBreakBtn');
+let breakInterval = null;
+let breakTime = <?= $breakTimeRemaining ?>;
+let isBreakActive = <?= $isOnBreak ? 'true' : 'false' ?>;
+
+// Fonction pour formater le temps
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Fonction pour démarrer le minuteur
+function startBreakTimer(duration = 300) { // 5 minutes par défaut
+    if (breakInterval) clearInterval(breakInterval);
+    
+    isBreakActive = true;
+    breakTime = duration;
+    breakTimer.classList.add('active');
+    breakTimer.querySelector('.icon i').className = 'fas fa-coffee';
+    toggleBreakBtn.innerHTML = '<i class="fas fa-play"></i>Reprendre le travail';
+    
+    // Mettre à jour l'affichage
+    breakTimeDisplay.textContent = formatTime(breakTime);
+    
+    // Démarrer le compte à rebours
+    breakInterval = setInterval(() => {
+        if (breakTime <= 0) {
+            clearInterval(breakInterval);
+            endBreakTimer();
+            return;
+        }
+        
+        breakTime--;
+        breakTimeDisplay.textContent = formatTime(breakTime);
+        
+        // Notification quand il reste 1 minute
+        if (breakTime === 60) {
+            showNotification('Il reste 1 minute de pause');
+        }
+    }, 1000);
+}
+
+// Fonction pour arrêter le minuteur
+function endBreakTimer() {
+    if (breakInterval) {
+        clearInterval(breakInterval);
+        breakInterval = null;
+    }
+    
+    isBreakActive = false;
+    breakTimer.classList.remove('active');
+    breakTimer.querySelector('.icon i').className = 'fas fa-clock';
+    breakTimeDisplay.textContent = '00:00';
+    toggleBreakBtn.innerHTML = '<i class="fas fa-pause"></i>Prendre une pause';
+    
+    showNotification('Pause terminée ! Reprise du travail.');
+}
+
+// Basculer entre pause/reprise
+toggleBreakBtn?.addEventListener('click', async () => {
+    if (!isBreakActive) {
+        // Demander la durée de la pause
+        const duration = prompt('Durée de la pause (en minutes) :', '5');
+        if (duration && !isNaN(duration) && duration > 0) {
+            startBreakTimer(duration * 60);
+            
+            // Envoyer la requête au serveur (à adapter selon votre backend)
+            try {
+                const response = await fetch('api/toggle_break.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'start',
+                        duration: duration
+                    })
+                });
+                
+                if (!response.ok) {
+                    console.error('Erreur lors de la mise à jour de la pause');
+                }
+            } catch (error) {
+                console.error('Erreur réseau:', error);
+            }
+        }
+    } else {
+        endBreakTimer();
+        
+        // Envoyer la requête au serveur
+        try {
+            const response = await fetch('api/toggle_break.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: 'stop' })
+            });
+            
+            if (!response.ok) {
+                console.error('Erreur lors de la reprise du travail');
+            }
+        } catch (error) {
+            console.error('Erreur réseau:', error);
+        }
+    }
+    
+    // Fermer le dropdown après action
+    dropdownOpen = false;
+    userDropdownMenu.classList.remove('show');
+});
+
+// Initialiser le minuteur si la pause est active
+if (isBreakActive && breakTime > 0) {
+    startBreakTimer(breakTime);
+}
+
+// ===============================
+// FONCTIONS UTILITAIRES
+// ===============================
+function showNotification(message, type = 'info') {
+    // Vous pouvez intégrer ici votre système de notifications
+    console.log(`Notification [${type}]: ${message}`);
+    
+    // Exemple simple avec alert (à remplacer par votre système)
+    if (type === 'warning') {
+        alert(message);
+    }
+}
+
+// ===============================
+// GESTION DE LA SIDEBAR
+// ===============================
+// Fermer le dropdown lors du redimensionnement
+window.addEventListener('resize', () => {
+    if (window.innerWidth < 992 && dropdownOpen) {
+        dropdownOpen = false;
+        userDropdownMenu.classList.remove('show');
+    }
+});
+</script>
+<script src="assets/js/profil.js"></script>
+</body>
+</html>

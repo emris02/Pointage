@@ -1,7 +1,19 @@
-// ==
+// ============================================
 // JavaScript principal de l'application
 // Pointage Xpert Pro
-// ==
+// ============================================
+window.updateLiveTimers = function () {
+    const timers = document.querySelectorAll('[data-live-timer]');
+    if (!timers.length) return;
+
+    timers.forEach(timer => {
+        const start = timer.dataset.start;
+        if (!start) return;
+
+        const elapsed = Math.floor((Date.now() - new Date(start)) / 1000);
+        timer.textContent = new Date(elapsed * 1000).toISOString().substr(11, 8);
+    });
+};
 
 const App = {
     // Configuration
@@ -355,9 +367,9 @@ const App = {
     }
 };
 
-// ==
+// ============================================
 // Initialisation au chargement du DOM
-// ==
+// ============================================
 document.addEventListener('DOMContentLoaded', function() {
     try {
         App.init();
@@ -367,9 +379,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ==
+// ============================================
 // Gestionnaires d'événements globaux
-// ==
+// ============================================
 
 // Recharger le calendrier quand la fenêtre est redimensionnée
 window.addEventListener('resize', function() {
@@ -387,9 +399,9 @@ window.addEventListener('error', function(e) {
     }
 });
 
-// ==
+// ============================================
 // Exposer certaines fonctions globalement
-// ==
+// ============================================
 window.App = App;
 
 // Fonction pour charger dynamiquement un panneau

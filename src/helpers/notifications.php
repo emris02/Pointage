@@ -1,11 +1,11 @@
 <?php
 /**
- * 
+ * ==========================================
  *  HELPERS - NOTIFICATION SYSTEM
  *  Fichier : helpers/notification.php
  *  Auteur : Moha
  *  Description : Gestion des notifications pour les employés
- * 
+ * ==========================================
  */
 
 require_once __DIR__ . '/../config/boostrap.php'; // 🔗 Connexion à la base de données

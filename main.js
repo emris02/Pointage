@@ -1,7 +1,7 @@
 // === CONFIGURATION GLOBALE ===
 const api = {
     scan: 'pointage.php',
-    saveJustification: 'save_late_reason.php',
+    saveJustification: 'save_late_reason_secure.php',
     updateField: 'employe_dashboard.php' // ➕ Utilise le même fichier PHP
 };
 
@@ -81,23 +81,20 @@ async function handleScan(token, onValid, onError) {
 }
 
 // === ENVOI JUSTIFICATION DE RETARD ===
-export async function sendJustification({ employe_id, scan_time, late_time, reason, comment }, onSuccess, onFail) {
+export async function sendJustification({ pointage_id, reason, comment }, onSuccess, onFail) {
     try {
         const response = await fetch(api.saveJustification, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                employe_id: employe_id,
-                scan_time,
-                late_time,
+                pointage_id,
                 reason,
-                comment,
-                status: 'pending'
+                comment
             })
         });
 
         const result = await response.json();
-        result.success ? onSuccess?.(result) : onFail?.(result.message);
+        result.success ? onSuccess?.(result) : onFail?.(result.error || result.message);
     } catch (err) {
         onFail?.("Erreur réseau : " + err.message);
     }

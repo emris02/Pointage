@@ -113,179 +113,247 @@ include 'partials/header.php';
 include 'src/views/partials/sidebar_canonique.php';
 ?>
 
-<div class="admin-profile-container">
-    <!-- En-tête -->
-    <header class="admin-profile-header">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1 class="h2 fw-bold mb-2">
-                    <i class="fas fa-user-shield me-2 text-primary"></i>
-                    Profil Administrateur
-                </h1>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item">
-                            <a href="admin_dashboard_unifie.php">Tableau de Bord</a>
-                        </li>
-                        <li class="breadcrumb-item">
-                            <a href="admin_dashboard_unifie.php#admins">Administrateurs</a>
-                        </li>
-                        <li class="breadcrumb-item active" aria-current="page">
-                            <?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?>
-                        </li>
-                    </ol>
-                </nav>
-            </div>
-            
-            <div class="btn-group">
-                <a href="admin_dashboard_unifie.php#admins" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Retour
-                </a>
-                
-                <?php if ($is_editing_own || $is_super_admin): ?>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                    <i class="fas fa-edit me-1"></i> Modifier
-                </button>
-                <?php endif; ?>
+<div class="main-container">
+
+    <!-- ================= EN-TÊTE PRINCIPAL (aligned with profil_employe.php) ================= -->
+    <header class="profile-header">
+        <div class="admin-profile-header-inner card border-0 shadow-sm bg-gradient-primary">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h1 class="h3 fw-bold mb-2 d-flex align-items-center text-white">
+                            <i class="fas fa-user-shield me-2"></i>
+                            Profil Administrateur
+                        </h1>
+
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0 text-white-75">
+                                <li class="breadcrumb-item">
+                                    <a href="admin_dashboard_unifie.php" class="text-white text-decoration-none">
+                                        <i class="fas fa-home me-1"></i> Tableau de Bord
+                                    </a>
+                                </li>
+                                <li class="breadcrumb-item">
+                                    <a href="admin_dashboard_unifie.php#admins" class="text-white text-decoration-none">
+                                        <i class="fas fa-users-cog me-1"></i> Administrateurs
+                                    </a>
+                                </li>
+                                <li class="breadcrumb-item active text-white" aria-current="page">
+                                    <i class="fas fa-user-circle me-1"></i>
+                                    <?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?>
+                                </li>
+                            </ol>
+                        </nav>
+                    </div>
+
+                    <div class="btn-group">
+                        <a href="admin_dashboard_unifie.php#admins" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-1"></i> Retour
+                        </a>
+
+                        <?php if ($is_editing_own || $is_super_admin): ?>
+                        <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            <i class="fas fa-edit me-1"></i> Modifier
+                        </button>
+                        <?php endif; ?>
+                        
+                        <!-- Bouton pour afficher le badge -->
+                        <button class="btn btn-outline-light" id="showBadgeBtn" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="admin-full">
+                            <i class="fas fa-id-card me-1"></i> Badge
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- Messages d'alerte -->
+    </header>
+
+    <main class="main-content py-4">
+        <div class="container-fluid px-3 px-md-4">
+
+    <!-- ================= ALERTES ================= -->
     <?php if (isset($_GET['success'])): ?>
-    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-        <div class="d-flex align-items-center">
-            <i class="fas fa-check-circle me-3 fs-5"></i>
-            <div class="flex-grow-1">
-                <?php 
-                switch ($_GET['success']) {
-                    case 'profile_updated': echo 'Profil mis à jour avec succès.'; break;
-                    case 'password_changed': echo 'Mot de passe modifié avec succès.'; break;
-                    default: echo 'Opération réussie.';
-                }
-                ?>
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="alert-icon bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                    <i class="fas fa-check-circle text-success fs-5"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <strong>Succès !</strong>
+                    <div class="small"><?= $_GET['success'] === 'profile_updated' ? 'Profil mis à jour avec succès.' : 'Opération réussie.' ?></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    </div>
-    <?php endif; ?>
-    
-    <?php if (isset($_GET['error'])): ?>
-    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-        <div class="d-flex align-items-center">
-            <i class="fas fa-exclamation-triangle me-3 fs-5"></i>
-            <div class="flex-grow-1">
-                <?php 
-                switch ($_GET['error']) {
-                    case 'password_mismatch': echo 'Les mots de passe ne correspondent pas.'; break;
-                    case 'current_password_wrong': echo 'Mot de passe actuel incorrect.'; break;
-                    case 'password_too_short': echo 'Le mot de passe doit contenir au moins 8 caractères.'; break;
-                    default: echo 'Une erreur est survenue.';
-                }
-                ?>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    </div>
     <?php endif; ?>
 
-    <!-- Contenu principal -->
+    <?php if (isset($_GET['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="alert-icon bg-danger bg-opacity-10 rounded-circle p-2 me-3">
+                    <i class="fas fa-exclamation-triangle text-danger fs-5"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <strong>Erreur !</strong>
+                    <div class="small">
+                        <?php 
+                        if ($_GET['error'] === 'password_mismatch') {
+                            echo 'Les mots de passe ne correspondent pas.';
+                        } elseif ($_GET['error'] === 'invalid_current') {
+                            echo 'Mot de passe actuel incorrect.';
+                        } else {
+                            echo 'Une erreur est survenue lors de l\'opération.';
+                        }
+                        ?>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- ================= CONTENU PRINCIPAL ================= -->
     <div class="row g-4">
-        <!-- Colonne gauche : Informations personnelles -->
+        
+        <!-- ===== COLONNE GAUCHE : INFORMATIONS PERSONNELLES ===== -->
         <div class="col-lg-4">
-            <div class="card admin-profile-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-user-circle me-2 text-primary"></i>
-                        Informations personnelles
+            <div class="card admin-profile-card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title fw-semibold d-flex align-items-center">
+                        <div class="header-icon bg-primary bg-opacity-10 text-primary rounded-2 p-2 me-3">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <span>Informations personnelles</span>
                     </h5>
                 </div>
                 <div class="card-body">
-                    <!-- Avatar/Initiales -->
+                    <!-- Avatar et identité -->
                     <div class="text-center mb-4">
-                        <?php 
-                        $initials = strtoupper(substr($admin['prenom'], 0, 1) . substr($admin['nom'], 0, 1));
-                        ?>
-                        <div class="admin-avatar-initials bg-primary text-white mb-3">
-                            <?= $initials ?>
+                        <div class="position-relative d-inline-block mb-3">
+                            <?php 
+                            $initials = strtoupper(substr($admin['prenom'], 0, 1) . substr($admin['nom'], 0, 1));
+                            ?>
+                            <div class="admin-avatar-initials avatar-xl rounded-circle <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'bg-gradient-super-admin' : 'bg-gradient-admin' ?> text-white d-flex align-items-center justify-content-center shadow-lg position-relative">
+                                <?= $initials ?>
+                            </div>
+                            <!-- Indicateur de statut -->
+                            <div class="avatar-status <?= $admin['statut'] === 'actif' ? 'status-online' : 'status-offline' ?> position-absolute bottom-0 end-0 border border-3 border-white shadow-sm"></div>
                         </div>
-                        <h4 class="mb-1"><?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?></h4>
                         
-                        <!-- Badge Admin avec effet de zoom -->
-                        <div class="admin-badge-container mb-2">
+                        <h4 class="fw-bold mb-2"><?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?></h4>
+                        
+                        <!-- Badge principal -->
+                        <div class="admin-badge-container mb-3">
                             <?php if ($admin['role'] === ROLE_SUPER_ADMIN): ?>
-                                <div class="admin-badge super-admin-badge" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="super-admin">
-                                    <i class="fas fa-crown me-1"></i> Super Administrateur
-                                </div>
+                                  <span class="admin-badge super-admin-badge badge-animate" 
+                                      data-bs-toggle="modal" 
+                                      data-bs-target="#badgeModal"
+                                      data-badge-type="super-admin"
+                                      data-delay="0">
+                                    <i class="fas fa-crown me-2"></i> Super Administrateur
+                                </span>
                             <?php else: ?>
-                                <div class="admin-badge admin-badge" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="admin">
-                                    <i class="fas fa-user-shield me-1"></i> Administrateur
-                                </div>
+                                  <span class="admin-badge admin-badge badge-animate" 
+                                      data-bs-toggle="modal" 
+                                      data-bs-target="#badgeModal"
+                                      data-badge-type="admin"
+                                      data-delay="200">
+                                    <i class="fas fa-user-shield me-2"></i> Administrateur
+                                </span>
                             <?php endif; ?>
                         </div>
                         
-                        <!-- Petits badges supplémentaires -->
-                        <div class="admin-badges-small">
-                            <span class="badge bg-success badge-hover" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="active">
-                                <i class="fas fa-check-circle me-1"></i> Actif
+                        <!-- Badges secondaires -->
+                        <div class="admin-badges-small d-flex flex-wrap justify-content-center gap-2">
+                            <?php
+                            // Déterminer la couleur du badge statut
+                            $statut_color = ($admin['statut'] === 'actif') ? 'success' : (($admin['statut'] === 'inactif') ? 'danger' : 'secondary');
+                            ?>
+                            <span class="badge bg-<?= $statut_color ?>-subtle text-<?= $statut_color ?> border-0 badge-hover" 
+                                  data-bs-toggle="modal" 
+                                  data-bs-target="#badgeModal"
+                                  data-badge-type="<?= $admin['statut'] === 'actif' ? 'active' : 'inactive' ?>">
+                                <i class="fas fa-check-circle me-1"></i> <?= ucfirst($admin['statut']) ?>
                             </span>
-                            <span class="badge bg-info badge-hover" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="verified">
-                                <i class="fas fa-check me-1"></i> Vérifié
+                            <span class="badge bg-info-subtle text-info border-0 badge-hover"
+                                  data-bs-toggle="modal" 
+                                  data-bs-target="#badgeModal"
+                                  data-badge-type="verified">
+                                <i class="fas fa-shield-check me-1"></i> Vérifié
                             </span>
                             <?php if ($admin['role'] === ROLE_SUPER_ADMIN): ?>
-                                <span class="badge bg-danger badge-hover" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="full-access">
-                                    <i class="fas fa-unlock me-1"></i> Accès complet
+                                <span class="badge bg-danger-subtle text-danger border-0 badge-hover"
+                                      data-bs-toggle="modal" 
+                                      data-bs-target="#badgeModal"
+                                      data-badge-type="full-access">
+                                    <i class="fas fa-unlock-alt me-1"></i> Accès complet
                                 </span>
                             <?php else: ?>
-                                <span class="badge bg-warning text-dark badge-hover" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="limited-access">
+                                <span class="badge bg-warning-subtle text-warning border-0 badge-hover"
+                                      data-bs-toggle="modal" 
+                                      data-bs-target="#badgeModal"
+                                      data-badge-type="limited-access">
                                     <i class="fas fa-lock me-1"></i> Accès limité
                                 </span>
                             <?php endif; ?>
                         </div>
                     </div>
 
+                    <!-- Grille d'informations -->
                     <div class="admin-info-grid">
-                        <div class="info-item">
-                            <div class="info-icon">
-                                <i class="fas fa-envelope text-primary"></i>
+                            <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="info-icon icon-48 bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center me-3">
+                                <i class="fas fa-envelope fs-5"></i>
                             </div>
-                            <div class="info-content">
-                                <div class="info-label">Email professionnel</div>
-                                <a href="mailto:<?= htmlspecialchars($admin['email']) ?>" class="info-value">
+                            <div class="info-content flex-grow-1">
+                                <div class="info-label text-muted small mb-1">Email professionnel</div>
+                                <a href="mailto:<?= htmlspecialchars($admin['email']) ?>" 
+                                   class="info-value fw-semibold text-decoration-none text-primary d-flex align-items-center">
                                     <?= htmlspecialchars($admin['email']) ?>
+                                    <i class="fas fa-external-link-alt ms-2 fs-6"></i>
                                 </a>
                             </div>
                         </div>
                         
-                        <div class="info-item">
-                            <div class="info-icon">
-                                <i class="fas fa-phone text-primary"></i>
+                            <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="info-icon icon-48 bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center me-3">
+                                <i class="fas fa-phone fs-5"></i>
                             </div>
-                            <div class="info-content">
-                                <div class="info-label">Téléphone</div>
-                                <a href="tel:<?= htmlspecialchars($admin['telephone'] ?? '') ?>" class="info-value">
+                            <div class="info-content flex-grow-1">
+                                <div class="info-label text-muted small mb-1">Téléphone</div>
+                                <a href="tel:<?= htmlspecialchars($admin['telephone'] ?? '') ?>" 
+                                   class="info-value fw-semibold text-decoration-none text-primary d-flex align-items-center">
                                     <?= htmlspecialchars($admin['telephone'] ?? 'Non renseigné') ?>
+                                    <i class="fas fa-phone-alt ms-2 fs-6"></i>
                                 </a>
                             </div>
                         </div>
                         
-                        <div class="info-item">
-                            <div class="info-icon">
-                                <i class="fas fa-map-marker-alt text-primary"></i>
+                            <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="info-icon icon-48 bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center me-3">
+                                <i class="fas fa-map-marker-alt fs-5"></i>
                             </div>
-                            <div class="info-content">
-                                <div class="info-label">Localisation</div>
-                                <div class="info-value">Mali, Bamako</div>
+                            <div class="info-content flex-grow-1">
+                                <div class="info-label text-muted small mb-1">Localisation</div>
+                                <div class="info-value fw-semibold d-flex align-items-center">
+                                    <i class="fas fa-flag me-2 text-muted"></i>
+                                    Mali, Bamako
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="info-item">
-                            <div class="info-icon">
-                                <i class="fas fa-clock text-primary"></i>
+                            <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border">
+                            <div class="info-icon icon-48 bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center me-3">
+                                <i class="fas fa-clock fs-5"></i>
                             </div>
-                            <div class="info-content">
-                                <div class="info-label">Fuseau horaire</div>
-                                <div class="info-value">GMT (UTC+0)</div>
+                            <div class="info-content flex-grow-1">
+                                <div class="info-label text-muted small mb-1">Fuseau horaire</div>
+                                <div class="info-value fw-semibold d-flex align-items-center">
+                                    <i class="fas fa-globe-africa me-2 text-muted"></i>
+                                    GMT (UTC+0)
+                                    <span class="badge bg-light text-dark ms-2 small">Bamako</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -293,87 +361,130 @@ include 'src/views/partials/sidebar_canonique.php';
             </div>
         </div>
 
-        <!-- Colonne centrale : Informations du compte -->
+        <!-- ===== COLONNE CENTRALE : INFORMATIONS DU COMPTE ===== -->
         <div class="col-lg-4">
-            <div class="card admin-profile-card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-info-circle me-2 text-info"></i>
-                        Informations du compte
+            <!-- Carte : Informations du compte -->
+            <div class="card admin-profile-card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title fw-semibold d-flex align-items-center">
+                        <div class="header-icon bg-info bg-opacity-10 text-info rounded-2 p-2 me-3">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <span>Informations du compte</span>
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="account-info">
-                        <div class="info-item mb-3">
-                            <div class="info-label">
-                                <i class="fas fa-hashtag me-2 text-muted"></i> ID
+                        <div class="info-item d-flex align-items-center justify-content-between p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="info-icon bg-secondary bg-opacity-10 text-secondary rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
+                                    <i class="fas fa-hashtag"></i>
+                                </div>
+                                <div>
+                                    <div class="info-label text-muted small mb-1">Identifiant unique</div>
+                                    <div class="info-value fw-semibold">#<?= $admin['id'] ?></div>
+                                </div>
                             </div>
-                            <div class="info-value">
-                                #<?= $admin['id'] ?>
-                            </div>
+                            <button class="btn btn-sm btn-outline-secondary copy-id-btn" data-id="<?= $admin['id'] ?>">
+                                <i class="fas fa-copy"></i>
+                            </button>
                         </div>
                         
-                        <div class="info-item mb-3">
-                            <div class="info-label">
-                                <i class="fas fa-shield-alt me-2 text-muted"></i> Rôle
+                        <div class="info-item d-flex align-items-center justify-content-between p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="info-icon <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'bg-danger bg-opacity-10 text-danger' : 'bg-primary bg-opacity-10 text-primary' ?> rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="info-label text-muted small mb-1">Rôle</div>
+                                    <div class="info-value">
+                                        <?php if ($admin['role'] === ROLE_SUPER_ADMIN): ?>
+                                            <span class="badge bg-gradient-super-admin text-white px-3 py-2 border-0 badge-clickable" 
+                                                  data-bs-toggle="modal" 
+                                                  data-bs-target="#badgeModal"
+                                                  data-badge-type="super-admin">
+                                                <i class="fas fa-crown me-1"></i> Super Admin
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-gradient-admin text-white px-3 py-2 border-0 badge-clickable" 
+                                                  data-bs-toggle="modal" 
+                                                  data-bs-target="#badgeModal"
+                                                  data-badge-type="admin">
+                                                <i class="fas fa-user-shield me-1"></i> Administrateur
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="info-value">
-                                <?php if ($admin['role'] === ROLE_SUPER_ADMIN): ?>
-                                    <span class="badge badge-super-admin badge-clickable" 
-                                          data-bs-toggle="modal" 
-                                          data-bs-target="#badgeModal"
-                                          data-badge-type="super-admin">
-                                        <i class="fas fa-crown me-1"></i> Super Admin
+                            <span class="badge <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary' ?>">
+                                <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'Tous droits' : 'Droits limités' ?>
+                            </span>
+                        </div>
+                        
+                        <div class="info-item d-flex align-items-center justify-content-between p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="info-icon <?= $admin['statut'] === 'actif' ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' ?> rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                                <div>
+                                    <div class="info-label text-muted small mb-1">Statut du compte</div>
+                                    <div class="info-value">
+                                        <span id="admin-statut" class="badge <?= $admin['statut'] === 'actif' ? 'bg-success' : 'bg-secondary' ?> text-white px-3 py-2 border-0 badge-clickable" 
+                                              data-bs-toggle="modal" 
+                                              data-bs-target="#badgeModal"
+                                              data-badge-type="<?= $admin['statut'] === 'actif' ? 'active' : 'inactive' ?>">
+                                            <i class="fas fa-<?= $admin['statut'] === 'actif' ? 'check' : 'times' ?>-circle me-1"></i>
+                                            <?= htmlspecialchars(ucfirst($admin['statut'])) ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="status-indicator <?= $admin['statut'] === 'actif' ? 'indicator-active' : 'indicator-inactive' ?>"></div>
+                        </div>
+                        
+                        <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="info-icon bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
+                                <i class="fas fa-calendar-plus"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="info-label text-muted small mb-1">Compte créé le</div>
+                                <div class="info-value fw-semibold d-flex align-items-center justify-content-between">
+                                    <span><?= isset($admin['created_at']) ? date('d/m/Y', strtotime($admin['created_at'])) : '—' ?></span>
+                                    <?php if (isset($admin['created_at'])): ?>
+                                    <span class="badge bg-light text-dark small">
+                                        <?= floor((time() - strtotime($admin['created_at'])) / (60 * 60 * 24)) ?> jours
                                     </span>
-                                <?php else: ?>
-                                    <span class="badge badge-admin badge-clickable" 
-                                          data-bs-toggle="modal" 
-                                          data-bs-target="#badgeModal"
-                                          data-badge-type="admin">
-                                        <i class="fas fa-user-shield me-1"></i> Administrateur
-                                    </span>
-                                <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="info-item mb-3">
-                            <div class="info-label">
-                                <i class="fas fa-circle me-2 text-muted"></i> Statut
+                        <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                            <div class="info-icon bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
+                                <i class="fas fa-clock"></i>
                             </div>
-                            <div class="info-value">
-                                <span id="admin-statut" class="badge <?= $admin['statut'] === 'actif' ? 'badge-active' : 'badge-inactive' ?> badge-clickable" 
-                                      data-bs-toggle="modal" 
-                                      data-bs-target="#badgeModal"
-                                      data-badge-type="<?= $admin['statut'] === 'actif' ? 'active' : 'limited-access' ?>">
-                                    <i class="fas fa-check-circle me-1"></i> <?= htmlspecialchars(ucfirst($admin['statut'])) ?>
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="info-item mb-3">
-                            <div class="info-label">
-                                <i class="fas fa-calendar-plus me-2 text-muted"></i> Compte créé
-                            </div>
-                            <div class="info-value">
-                                <?= isset($admin['created_at']) ? htmlspecialchars($admin['created_at']) : '—' ?>
+                            <div class="flex-grow-1">
+                                <div class="info-label text-muted small mb-1">Dernière connexion</div>
+                                <div class="info-value fw-semibold d-flex align-items-center justify-content-between">
+                                    <span><?= $last_activity ? formatDateMali($last_activity, true) : "Jamais connecté" ?></span>
+                                    <?php if ($last_activity): ?>
+                                        <span class="badge <?= (time() - strtotime($last_activity)) < 3600 ? 'bg-success' : 'bg-warning' ?> text-white small">
+                                            <?= ceil((time() - strtotime($last_activity)) / 3600) ?>h
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="info-item mb-3">
-                            <div class="info-label">
-                                <i class="fas fa-clock me-2 text-muted"></i> Dernière connexion
+                        <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border">
+                            <div class="info-icon bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
+                                <i class="fas fa-sync-alt"></i>
                             </div>
-                            <div class="info-value">
-                                <?= $last_activity ? formatDateMali($last_activity, true) : "—" ?>
-                            </div>
-                        </div>
-                        
-                        <div class="info-item">
-                            <div class="info-label">
-                                <i class="fas fa-sync-alt me-2 text-muted"></i> Dernière mise à jour
-                            </div>
-                            <div class="info-value">
-                                <?= isset($admin['created_at']) ? htmlspecialchars($admin['created_at']) : '—' ?>
+                            <div class="flex-grow-1">
+                                <div class="info-label text-muted small mb-1">Dernière mise à jour</div>
+                                <div class="info-value fw-semibold">
+                                    <?= isset($admin['updated_at']) && $admin['updated_at'] !== $admin['created_at'] ? formatDateMali($admin['updated_at'], true) : '—' ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -381,126 +492,215 @@ include 'src/views/partials/sidebar_canonique.php';
             </div>
 
             <!-- Carte : Actions rapides -->
-            <div class="card admin-profile-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-bolt me-2 text-warning"></i>
-                        Actions rapides
+            <div class="card admin-profile-card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 text-center">
+                    <h5 class="card-title fw-semibold d-flex align-items-center justify-content-center">
+                        <div class="header-icon bg-warning bg-opacity-10 text-warning rounded-2 p-2 me-3">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <span>Actions rapides</span>
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="quick-actions">
-                        <button class="btn btn-outline-primary w-100 mb-2" id="btn-edit-admin" onclick="showEditModal()">
-                            <i class="fas fa-edit me-2"></i> Modifier le profil
+                    <div class="quick-actions d-flex flex-column gap-2">
+                        <button class="btn btn-primary w-100 py-2 shadow-sm transition-all" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#editProfileModal">
+                            <i class="fas fa-edit me-2"></i> Modifier profil
                         </button>
                         
-                        <button class="btn btn-outline-warning w-100 mb-2" id="btn-change-password" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                            <i class="fas fa-key me-2"></i> Changer le mot de passe
+                        <button class="btn btn-warning w-100 py-2 shadow-sm transition-all" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#changePasswordModal">
+                            <i class="fas fa-key me-2"></i> Changer mot de passe
                         </button>
                         
-                        <a href="admin_dashboard_unifie.php#employes" id="btn-manage-employees" class="btn btn-outline-success w-100 mb-2">
-                            <i class="fas fa-users me-2"></i> Gérer les employés
+                        <a href="admin_dashboard_unifie.php#employes" 
+                           class="btn btn-success w-100 py-2 shadow-sm transition-all">
+                            <i class="fas fa-users me-2"></i> Gérer employés
                         </a>
                         
-                        <a href="admin_dashboard_unifie.php#demandes" id="btn-view-requests" class="btn btn-outline-info w-100 mb-2">
-                            <i class="fas fa-clipboard-list me-2"></i> Voir les demandes
+                        <a href="admin_dashboard_unifie.php#demandes" 
+                           class="btn btn-info w-100 py-2 shadow-sm transition-all">
+                            <i class="fas fa-clipboard-list me-2"></i> Voir demandes
                         </a>
-                        
-                        <button class="btn btn-outline-secondary w-100 mb-2" id="btn-show-badge">
-                            <i class="fas fa-qrcode me-2"></i> Afficher le badge
+
+                        <!-- Bouton pour afficher le badge -->
+                        <button class="btn btn-outline-primary w-100 py-2 shadow-sm transition-all" 
+                                id="btn-show-badge"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#badgeModal"
+                                data-badge-type="admin-full">
+                            <i class="fas fa-id-card me-2"></i> Afficher le badge
                         </button>
 
                         <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
-                            <button class="btn btn-outline-danger w-100 mb-2" id="btn-deactivate-admin" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                <i class="fas fa-user-slash me-2"></i> Désactiver le compte
-                            </button>
-
-                            <!-- Activer et Supprimer (visibles uniquement lorsque le compte est inactif) -->
-                            <button class="btn btn-outline-success w-100 mb-2" id="btn-activate-admin" style="display:none">
-                                <i class="fas fa-user-check me-2"></i> Activer le compte
-                            </button>
-
-                            <button class="btn btn-danger w-100 mb-2" id="btn-delete-admin" style="display:none" data-bs-toggle="modal" data-bs-target="#deleteModalPermanent">
-                                <i class="fas fa-trash-alt me-2"></i> Supprimer définitivement
-                            </button>
+                            <?php if ($admin['statut'] === 'actif'): ?>
+                                <button class="btn btn-outline-danger w-100 py-2 shadow-sm transition-all" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal">
+                                    <i class="fas fa-user-slash me-2"></i> Désactiver compte
+                                </button>
+                            <?php else: ?>
+                                <button class="btn btn-success w-100 py-2 shadow-sm transition-all" 
+                                        id="btn-activate-admin">
+                                    <i class="fas fa-user-check me-2"></i> Activer compte
+                                </button>
+                                <button class="btn btn-danger w-100 py-2 shadow-sm transition-all" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModalPermanent">
+                                    <i class="fas fa-trash-alt me-2"></i> Supprimer définitivement
+                                </button>
+                            <?php endif; ?>
                         <?php endif; ?>
-                    </div> 
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Colonne droite : Statistiques -->
+        <!-- ===== COLONNE DROITE : STATISTIQUES ===== -->
         <div class="col-lg-4">
-            <div class="card admin-profile-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-chart-bar me-2 text-success"></i>
-                        Statistiques d'activité
+            <div class="card admin-profile-card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title fw-semibold d-flex align-items-center">
+                        <div class="header-icon bg-success bg-opacity-10 text-success rounded-2 p-2 me-3">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <span>Statistiques d'activité</span>
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="stats-grid">
                         <?php if ($admin['role'] === ROLE_ADMIN): ?>
-                        <div class="stat-item">
-                            <div class="stat-icon bg-primary-light">
-                                <i class="fas fa-users text-primary"></i>
+                        <div class="stat-card text-center p-3 rounded-3 bg-light-subtle border mb-3 transition-all">
+                            <div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center mb-3 size-60">
+                                <i class="fas fa-users fs-4"></i>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-number"><?= $stats['employes_geres'] ?></div>
-                                <div class="stat-label">Employés gérés</div>
-                                <div class="stat-subtext">Total actifs</div>
+                            <div class="stat-number fw-bold fs-3 mb-1"><?= $stats['employes_geres'] ?? 0 ?></div>
+                            <div class="stat-label text-muted small mb-2">Employés gérés</div>
+                            <div class="stat-trend text-success small d-flex align-items-center justify-content-center">
+                                <i class="fas fa-chart-line me-1"></i> 
+                                <span>Actifs</span>
                             </div>
                         </div>
                         <?php endif; ?>
                         
                         <?php if ($admin['role'] === ROLE_SUPER_ADMIN): ?>
-                        <div class="stat-item">
-                            <div class="stat-icon bg-danger-light">
-                                <i class="fas fa-user-shield text-danger"></i>
+                        <div class="stat-card text-center p-3 rounded-3 bg-light-subtle border mb-3 transition-all">
+                            <div class="stat-icon bg-danger bg-opacity-10 text-danger rounded-3 d-inline-flex align-items-center justify-content-center mb-3 size-60">
+                                <i class="fas fa-user-shield fs-4"></i>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-number"><?= $stats['admins_crees'] ?></div>
-                                <div class="stat-label">Admins créés</div>
-                                <div class="stat-subtext">Par ce super admin</div>
+                            <div class="stat-number fw-bold fs-3 mb-1"><?= $stats['admins_crees'] ?? 0 ?></div>
+                            <div class="stat-label text-muted small mb-2">Admins créés</div>
+                            <div class="stat-trend text-muted small d-flex align-items-center justify-content-center">
+                                <i class="fas fa-history me-1"></i> Total
                             </div>
                         </div>
                         <?php endif; ?>
                         
-                        <div class="stat-item">
-                            <div class="stat-icon bg-success-light">
-                                <i class="fas fa-clipboard-check text-success"></i>
+                        <div class="stat-card text-center p-3 rounded-3 bg-light-subtle border mb-3 transition-all">
+                            <div class="stat-icon bg-success bg-opacity-10 text-success rounded-3 d-inline-flex align-items-center justify-content-center mb-3 size-60">
+                                <i class="fas fa-clipboard-check fs-4"></i>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-number"><?= $stats['demandes_traitees'] ?></div>
-                                <div class="stat-label">Demandes traitées</div>
-                                <div class="stat-subtext">30 derniers jours</div>
+                            <div class="stat-number fw-bold fs-3 mb-1"><?= $stats['demandes_traitees'] ?? 0 ?></div>
+                            <div class="stat-label text-muted small mb-2">Demandes traitées</div>
+                            <div class="stat-trend text-success small d-flex align-items-center justify-content-center">
+                                <i class="fas fa-arrow-up me-1"></i> 30 jours
                             </div>
                         </div>
                         
-                        <div class="stat-item">
-                            <div class="stat-icon bg-info-light">
-                                <i class="fas fa-fingerprint text-info"></i>
+                        <div class="stat-card text-center p-3 rounded-3 bg-light-subtle border transition-all">
+                            <div class="stat-icon bg-info bg-opacity-10 text-info rounded-3 d-inline-flex align-items-center justify-content-center mb-3 size-60">
+                                <i class="fas fa-fingerprint fs-4"></i>
                             </div>
-                            <div class="stat-content">
-                                <div class="stat-number"><?= $stats['pointages_recent'] ?></div>
-                                <div class="stat-label">Pointages récents</div>
-                                <div class="stat-subtext">7 derniers jours</div>
+                            <div class="stat-number fw-bold fs-3 mb-1"><?= $stats['pointages_recent'] ?? 0 ?></div>
+                            <div class="stat-label text-muted small mb-2">Pointages vérifiés</div>
+                            <div class="stat-trend text-info small d-flex align-items-center justify-content-center">
+                                <i class="fas fa-calendar me-1"></i> 7 derniers jours
                             </div>
                         </div>
                     </div>
                     
                     <div class="mt-4 pt-3 border-top">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="text-muted">Performance globale</span>
-                            <span class="badge badge-performance badge-clickable" 
+                            <span class="badge badge-performance bg-success text-white px-3 py-2 border-0 badge-clickable" 
                                   data-bs-toggle="modal" 
                                   data-bs-target="#badgeModal"
                                   data-badge-type="performance">
                                 <i class="fas fa-chart-line me-1"></i> Excellent
                             </span>
                         </div>
-                        <div class="progress mt-2" style="height: 6px;">
-                            <div class="progress-bar bg-success" style="width: 92%"></div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" style="width: 92%"></div>
+                        </div>
+                        <div class="text-end text-muted small mt-1">
+                            92% de taux de réussite
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= FOOTER D'ACTIONS ================= -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card admin-profile-card action-footer border-0 shadow-sm bg-gradient-primary">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-lg-4 text-center text-lg-start mb-3 mb-lg-0">
+                            <h5 class="fw-semibold mb-1 text-white">Actions administratives</h5>
+                            <p class="text-white-75 small mb-0">Gérez le compte administrateur</p>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-end">
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-light px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                                        <i class="fas fa-edit me-2"></i> Modifier profil
+                                    </button>
+                                    <button class="btn btn-light dropdown-toggle dropdown-toggle-split px-3 shadow-sm" 
+                                            type="button" 
+                                            data-bs-toggle="dropdown">
+                                        <span class="visually-hidden">Plus d'actions</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                                <i class="fas fa-key me-2"></i> Changer mot de passe
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item" id="btn-export-profile">
+                                                <i class="fas fa-download me-2"></i> Exporter profil
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <button class="btn btn-outline-light px-4 py-2 shadow-sm" 
+                                        id="btn-show-badge-footer"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#badgeModal"
+                                        data-badge-type="admin-full">
+                                    <i class="fas fa-id-card me-2"></i> Voir le badge
+                                </button>
+
+                                <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
+                                    <?php if ($admin['statut'] === 'actif'): ?>
+                                        <button class="btn btn-warning px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                            <i class="fas fa-user-slash me-2"></i> Désactiver
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="btn btn-success px-4 py-2 shadow-sm" id="btn-activate-admin-footer">
+                                            <i class="fas fa-user-check me-2"></i> Activer
+                                        </button>
+                                        <button class="btn btn-danger px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModalPermanent">
+                                            <i class="fas fa-trash me-2"></i> Supprimer
+                                        </button>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -509,85 +709,343 @@ include 'src/views/partials/sidebar_canonique.php';
     </div>
 </div>
 
-<!-- Modal : Badge en grand -->
+<!-- ================= MODAL : BADGE EN GRAND ================= -->
 <div class="modal fade" id="badgeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-gradient-primary text-white border-0 position-relative">
+                <div class="modal-header-content w-100">
+                    <h5 class="modal-title d-flex align-items-center">
+                        <i class="fas fa-id-card me-2"></i>
+                        <span id="modalBadgeTitle">Badge Administrateur</span>
+                    </h5>
+                    <p class="modal-subtitle mb-0 text-white-75 small">Identifiant unique et sécurisé</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center p-4">
-                <!-- Contenu dynamique rempli par JavaScript -->
-                <div id="badgeContent" class="badge-modal-content">
-                    <div class="badge-large mb-3" id="badgeIconLarge"></div>
-                    <h4 id="badgeTitle" class="fw-bold mb-2"></h4>
-                    <p id="badgeDescription" class="text-muted mb-3"></p>
-                    <div class="badge-details" id="badgeDetails"></div>
+            <div class="modal-body p-4 p-lg-5">
+                <div class="row g-4 align-items-center">
+                    <!-- Colonne gauche : Badge visuel -->
+                    <div class="col-md-5">
+                        <div class="badge-visual-container text-center">
+                            <div class="badge-visual-wrapper position-relative mb-4">
+                                <div class="badge-large rounded-circle mx-auto shadow-lg position-relative overflow-hidden" 
+                                     id="badgeIconLarge" 
+                                     style="width: 160px; height: 160px; display: flex; align-items: center; justify-content: center;">
+                                    <!-- Icône dynamique -->
+                                    <div class="badge-icon-inner w-100 h-100 d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user-shield text-white" style="font-size: 4rem;"></i>
+                                    </div>
+                                    <!-- Effet de brillance -->
+                                    <div class="badge-shine position-absolute top-0 start-0 w-100 h-100"></div>
+                                </div>
+                                
+                                <!-- Éléments décoratifs -->
+                                <div class="badge-decoration position-absolute top-0 start-0 w-100 h-100">
+                                    <div class="decoration-ring ring-1"></div>
+                                    <div class="decoration-ring ring-2"></div>
+                                    <div class="decoration-ring ring-3"></div>
+                                </div>
+                            </div>
+                            
+                            <h3 class="fw-bold mb-2" id="badgeName"><?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?></h3>
+                            <div class="badge-type-container mb-3">
+                                <span class="badge-type-big px-4 py-2 rounded-pill fw-semibold" id="badgeType">
+                                    Administrateur
+                                </span>
+                            </div>
+                            
+                            <!-- QR Code -->
+                            <div class="qr-code-container mt-4">
+                                <div class="qr-code-wrapper position-relative d-inline-block">
+                                    <div class="qr-placeholder bg-white rounded-3 p-3 shadow-sm border">
+                                        <i class="fas fa-qrcode fa-4x text-primary opacity-75"></i>
+                                    </div>
+                                    <div class="qr-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-10 rounded-3 opacity-0" 
+                                         style="transition: opacity 0.3s;">
+                                        <div class="qr-overlay-content text-white">
+                                            <i class="fas fa-expand-alt fa-2x"></i>
+                                            <div class="small mt-1">Agrandir</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colonne droite : Détails du badge -->
+                    <div class="col-md-7">
+                        <div class="badge-details-container">
+                            <div class="section-header mb-4">
+                                <h4 class="fw-semibold mb-3 d-flex align-items-center">
+                                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                                    Détails du badge
+                                </h4>
+                            </div>
+                            
+                            <div class="badge-info-grid">
+                                <!-- Information 1 : Statut -->
+                                <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                                    <div class="info-icon bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 48px; height: 48px;">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="info-content flex-grow-1">
+                                        <div class="info-label text-muted small mb-1">Statut du badge</div>
+                                        <div class="info-value fw-semibold d-flex align-items-center justify-content-between">
+                                            <span class="badge bg-success px-3 py-2">
+                                                <i class="fas fa-shield-check me-1"></i> ACTIF
+                                            </span>
+                                            <span class="text-success small fw-medium">
+                                                <i class="fas fa-clock me-1"></i> Valide
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Information 2 : Identifiant -->
+                                <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                                    <div class="info-icon bg-info bg-opacity-10 text-info rounded-2 d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 48px; height: 48px;">
+                                        <i class="fas fa-fingerprint"></i>
+                                    </div>
+                                    <div class="info-content flex-grow-1">
+                                        <div class="info-label text-muted small mb-1">Identifiant unique</div>
+                                        <div class="info-value fw-semibold d-flex align-items-center justify-content-between">
+                                            <span class="text-dark">#ADMIN-<?= str_pad($admin['id'], 4, '0', STR_PAD_LEFT) ?></span>
+                                            <button class="btn btn-sm btn-outline-secondary copy-id-btn" data-id="ADMIN-<?= $admin['id'] ?>">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Information 3 : Expiration -->
+                                <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
+                                    <div class="info-icon bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 48px; height: 48px;">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div class="info-content flex-grow-1">
+                                        <div class="info-label text-muted small mb-1">Date d'expiration</div>
+                                        <div class="info-value fw-semibold d-flex align-items-center justify-content-between">
+                                            <span>31/12/2024</span>
+                                            <span class="badge bg-warning-subtle text-warning">
+                                                <i class="fas fa-clock me-1"></i> 180 jours
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Information 4 : Permissions -->
+                                <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border">
+                                    <div class="info-icon bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 48px; height: 48px;">
+                                        <i class="fas fa-user-lock"></i>
+                                    </div>
+                                    <div class="info-content flex-grow-1">
+                                        <div class="info-label text-muted small mb-1">Niveau d'accès</div>
+                                        <div class="info-value fw-semibold d-flex align-items-center justify-content-between">
+                                            <span><?= $admin['role'] === ROLE_SUPER_ADMIN ? 'Super Administrateur' : 'Administrateur' ?></span>
+                                            <span class="badge <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary' ?>">
+                                                <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'Accès complet' : 'Accès standard' ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Actions du badge -->
+                            <div class="badge-actions mt-4 pt-3 border-top">
+                                <div class="d-flex flex-wrap gap-2 justify-content-between">
+                                    <button type="button" class="btn btn-outline-primary px-4 py-2 d-flex align-items-center">
+                                        <i class="fas fa-print me-2"></i>
+                                        Imprimer
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success px-4 py-2 d-flex align-items-center">
+                                        <i class="fas fa-download me-2"></i>
+                                        Télécharger
+                                    </button>
+                                    <button type="button" class="btn btn-primary px-4 py-2 d-flex align-items-center">
+                                        <i class="fas fa-sync-alt me-2"></i>
+                                        Régénérer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Fermer
+                </button>
+                <div class="modal-footer-info text-muted small ms-auto">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Le badge est valide pour tous les accès système
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal : Modifier le profil -->
+<!-- ================= MODAL : MODIFIER PROFIL ================= -->
 <div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <form action="update_admin_profile.php" method="POST" id="editProfileForm">
+            <form action="update_admin_profile.php" method="POST" id="editProfileForm" class="needs-validation" novalidate>
                 <input type="hidden" name="admin_id" value="<?= $admin['id'] ?>">
                 
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-edit me-2"></i>
-                        Modifier le profil
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-gradient-primary text-white border-0 position-relative">
+                    <div class="modal-header-content">
+                        <h5 class="modal-title d-flex align-items-center">
+                            <i class="fas fa-user-edit me-2"></i>
+                            Modifier le profil
+                        </h5>
+                        <p class="modal-subtitle mb-0 text-white-75 small">Mettez à jour les informations de l'administrateur</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Nom</label>
-                            <input type="text" name="nom" class="form-control" 
-                                   value="<?= htmlspecialchars($admin['nom']) ?>" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Prénom</label>
-                            <input type="text" name="prenom" class="form-control" 
-                                   value="<?= htmlspecialchars($admin['prenom']) ?>" required>
+                
+                <div class="modal-body p-4 p-lg-5">
+                    <div class="edit-profile-form">
+                        <!-- Section : Identité -->
+                        <div class="section mb-4">
+                            <h6 class="section-title fw-semibold mb-3 d-flex align-items-center">
+                                <div class="section-icon bg-primary bg-opacity-10 text-primary rounded-2 p-2 me-2">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span>Identité</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium required">Nom</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-user text-muted"></i>
+                                        </span>
+                                        <input type="text" name="nom" class="form-control ps-0" 
+                                               value="<?= htmlspecialchars($admin['nom']) ?>" 
+                                               required
+                                               placeholder="Entrez le nom">
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir un nom valide.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium required">Prénom</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-user text-muted"></i>
+                                        </span>
+                                        <input type="text" name="prenom" class="form-control ps-0" 
+                                               value="<?= htmlspecialchars($admin['prenom']) ?>" 
+                                               required
+                                               placeholder="Entrez le prénom">
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir un prénom valide.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Email</label>
-                            <input type="email" name="email" class="form-control" 
-                                   value="<?= htmlspecialchars($admin['email']) ?>" required>
-                        </div>
-                        
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Téléphone</label>
-                            <input type="tel" name="telephone" class="form-control" 
-                                   value="<?= htmlspecialchars($admin['telephone'] ?? '') ?>"
-                                   placeholder="+223 XX XX XX XX">
+                        <!-- Section : Contact -->
+                        <div class="section mb-4">
+                            <h6 class="section-title fw-semibold mb-3 d-flex align-items-center">
+                                <div class="section-icon bg-info bg-opacity-10 text-info rounded-2 p-2 me-2">
+                                    <i class="fas fa-address-card"></i>
+                                </div>
+                                <span>Contact</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-medium required">Email professionnel</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-envelope text-muted"></i>
+                                        </span>
+                                        <input type="email" name="email" class="form-control ps-0" 
+                                               value="<?= htmlspecialchars($admin['email']) ?>" 
+                                               required
+                                               placeholder="exemple@xpertpro.ml">
+                                        <div class="invalid-feedback">
+                                            Veuillez saisir une adresse email valide.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label class="form-label fw-medium">Téléphone</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-phone text-muted"></i>
+                                        </span>
+                                        <input type="tel" name="telephone" class="form-control ps-0" 
+                                               value="<?= htmlspecialchars($admin['telephone'] ?? '') ?>"
+                                               placeholder="+223 XX XX XX XX"
+                                               pattern="[+]?[0-9\s\-]+"
+                                               maxlength="20">
+                                        <div class="invalid-feedback">
+                                            Format téléphone invalide.
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted small">
+                                        Format international recommandé
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <?php if ($is_super_admin && !$is_editing_own): ?>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Rôle</label>
-                            <select name="role" class="form-select">
-                                <option value="<?= ROLE_ADMIN ?>" <?= $admin['role'] === ROLE_ADMIN ? 'selected' : '' ?>>
-                                    Administrateur
-                                </option>
-                                <option value="<?= ROLE_SUPER_ADMIN ?>" <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'selected' : '' ?>>
-                                    Super Administrateur
-                                </option>
-                            </select>
+                        <!-- Section : Rôle et Permissions -->
+                        <div class="section mb-4">
+                            <h6 class="section-title fw-semibold mb-3 d-flex align-items-center">
+                                <div class="section-icon bg-warning bg-opacity-10 text-warning rounded-2 p-2 me-2">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <span>Rôle et Permissions</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-medium required">Rôle</label>
+                                    <div class="role-selector">
+                                        <select name="role" class="form-select" required>
+                                            <option value="" disabled>Sélectionnez un rôle</option>
+                                            <option value="<?= ROLE_ADMIN ?>" <?= $admin['role'] === ROLE_ADMIN ? 'selected' : '' ?> data-description="Accès standard aux fonctionnalités administratives">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-user-shield me-2 text-primary"></i>
+                                                    <span>Administrateur</span>
+                                                </div>
+                                            </option>
+                                            <option value="<?= ROLE_SUPER_ADMIN ?>" <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'selected' : '' ?> data-description="Accès complet avec tous les privilèges">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-crown me-2 text-danger"></i>
+                                                    <span>Super Administrateur</span>
+                                                </div>
+                                            </option>
+                                        </select>
+                                        <div class="role-description mt-2 p-3 bg-light rounded-2" id="roleDescription">
+                                            <!-- Description dynamique -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i> Enregistrer
+                
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary px-4 py-2">
+                        <i class="fas fa-save me-2"></i>
+                        Enregistrer les modifications
                     </button>
                 </div>
             </form>
@@ -595,67 +1053,125 @@ include 'src/views/partials/sidebar_canonique.php';
     </div>
 </div>
 
-<!-- Modal : Changer le mot de passe -->
+<!-- ================= MODAL : CHANGER MOT DE PASSE ================= -->
 <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <form action="change_admin_password.php" method="POST" id="changePasswordForm">
+            <form action="change_admin_password.php" method="POST" id="changePasswordForm" class="needs-validation" novalidate>
                 <input type="hidden" name="admin_id" value="<?= $admin['id'] ?>">
                 
-                <div class="modal-header bg-warning text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-key me-2"></i>
-                        Changer le mot de passe
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-gradient-warning text-white border-0 position-relative">
+                    <div class="modal-header-content">
+                        <h5 class="modal-title d-flex align-items-center">
+                            <i class="fas fa-key me-2"></i>
+                            Changer le mot de passe
+                        </h5>
+                        <p class="modal-subtitle mb-0 text-white-75 small">Définir un nouveau mot de passe sécurisé</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                
+                <div class="modal-body p-4">
                     <?php if ($is_editing_own): ?>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Mot de passe actuel</label>
+                    <div class="password-section mb-4">
+                        <label class="form-label fw-medium required">Mot de passe actuel</label>
                         <div class="input-group">
-                            <input type="password" name="current_password" class="form-control" required>
-                            <button type="button" class="btn btn-outline-secondary toggle-password">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-lock text-muted"></i>
+                            </span>
+                            <input type="password" name="current_password" class="form-control ps-0" required
+                                   placeholder="Saisissez votre mot de passe actuel"
+                                   id="currentPassword">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="currentPassword">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            <div class="invalid-feedback">
+                                Mot de passe actuel requis.
+                            </div>
                         </div>
                     </div>
                     <?php endif; ?>
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nouveau mot de passe</label>
+                    <div class="password-section mb-4">
+                        <label class="form-label fw-medium required">Nouveau mot de passe</label>
                         <div class="input-group">
-                            <input type="password" name="new_password" class="form-control" 
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-lock text-muted"></i>
+                            </span>
+                            <input type="password" name="new_password" class="form-control ps-0" 
                                    required minlength="8"
-                                   placeholder="Minimum 8 caractères">
-                            <button type="button" class="btn btn-outline-secondary toggle-password">
+                                   placeholder="Minimum 8 caractères"
+                                   id="newPassword"
+                                   pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="newPassword">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            <div class="invalid-feedback">
+                                Le mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule et chiffre.
+                            </div>
                         </div>
-                        <div class="form-text">Inclure majuscules, minuscules et chiffres</div>
+                        <div class="password-requirements mt-2">
+                            <div class="requirements-list small text-muted">
+                                <div class="requirement d-flex align-items-center mb-1">
+                                    <i class="fas fa-circle text-muted me-2" style="font-size: 0.5rem;"></i>
+                                    <span>Au moins 8 caractères</span>
+                                </div>
+                                <div class="requirement d-flex align-items-center mb-1">
+                                    <i class="fas fa-circle text-muted me-2" style="font-size: 0.5rem;"></i>
+                                    <span>Une majuscule et une minuscule</span>
+                                </div>
+                                <div class="requirement d-flex align-items-center">
+                                    <i class="fas fa-circle text-muted me-2" style="font-size: 0.5rem;"></i>
+                                    <span>Au moins un chiffre</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Confirmer le mot de passe</label>
+                    <div class="password-section mb-4">
+                        <label class="form-label fw-medium required">Confirmer le mot de passe</label>
                         <div class="input-group">
-                            <input type="password" name="confirm_password" class="form-control" required>
-                            <button type="button" class="btn btn-outline-secondary toggle-password">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-lock text-muted"></i>
+                            </span>
+                            <input type="password" name="confirm_password" class="form-control ps-0" required
+                                   placeholder="Confirmez le nouveau mot de passe"
+                                   id="confirmPassword">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="confirmPassword">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            <div class="invalid-feedback">
+                                Les mots de passe doivent correspondre.
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="password-strength mt-3">
-                        <div class="strength-meter">
-                            <div class="strength-bar"></div>
+                    <!-- Indicateur de force du mot de passe -->
+                    <div class="password-strength mt-4">
+                        <div class="strength-header d-flex justify-content-between mb-2">
+                            <span class="small fw-medium">Force du mot de passe</span>
+                            <span class="strength-text small fw-medium" id="strengthText">Faible</span>
                         </div>
-                        <div class="strength-text small mt-1"></div>
+                        <div class="strength-meter bg-light rounded" style="height: 8px;">
+                            <div class="strength-bar rounded" style="height: 100%; width: 0%;"></div>
+                        </div>
+                        <div class="strength-indicators d-flex justify-content-between mt-1">
+                            <span class="indicator weak"></span>
+                            <span class="indicator medium"></span>
+                            <span class="indicator strong"></span>
+                            <span class="indicator very-strong"></span>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-key me-1"></i> Modifier
+                
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-warning px-4 py-2">
+                        <i class="fas fa-key me-2"></i>
+                        Modifier le mot de passe
                     </button>
                 </div>
             </form>
@@ -663,50 +1179,89 @@ include 'src/views/partials/sidebar_canonique.php';
     </div>
 </div>
 
-<!-- Modal : Désactiver le compte -->
+<!-- ================= MODAL : DÉSACTIVER COMPTE ================= -->
 <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-slash me-2"></i>
-                    Désactiver le compte
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-gradient-danger text-white border-0 position-relative">
+                <div class="modal-header-content">
+                    <h5 class="modal-title d-flex align-items-center">
+                        <i class="fas fa-user-slash me-2"></i>
+                        Désactiver le compte
+                    </h5>
+                    <p class="modal-subtitle mb-0 text-white-75 small">Action administrative importante</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
+            
+            <div class="modal-body p-4">
+                <!-- Alerte d'avertissement -->
+                <div class="alert alert-danger border-0 shadow-sm">
                     <div class="d-flex">
                         <div class="flex-shrink-0">
-                            <i class="fas fa-exclamation-circle fa-2x"></i>
+                            <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
                         </div>
                         <div class="flex-grow-1 ms-3">
-                            <h6 class="alert-heading">Attention !</h6>
+                            <h6 class="alert-heading fw-bold mb-2">Attention ! Action critique</h6>
                             <p class="mb-0">
                                 Vous êtes sur le point de désactiver le compte administrateur de 
-                                <strong><?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?></strong>.
-                                L'administrateur ne pourra plus se connecter.
+                                <strong class="text-dark"><?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?></strong>.
                             </p>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Conséquences -->
+                <div class="consequences-section mt-4">
+                    <h6 class="fw-semibold mb-3 d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                        Conséquences
+                    </h6>
+                    <div class="consequences-list">
+                        <div class="consequence-item d-flex align-items-start mb-2">
+                            <i class="fas fa-ban text-danger mt-1 me-2"></i>
+                            <span>L'administrateur ne pourra plus se connecter au système</span>
+                        </div>
+                        <div class="consequence-item d-flex align-items-start mb-2">
+                            <i class="fas fa-user-times text-danger mt-1 me-2"></i>
+                            <span>Tous ses accès seront immédiatement suspendus</span>
+                        </div>
+                        <div class="consequence-item d-flex align-items-start">
+                            <i class="fas fa-history text-danger mt-1 me-2"></i>
+                            <span>Les données resteront conservées pour audit</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Formulaire de confirmation -->
                 <form action="deactivate_admin.php" method="POST" id="deactivateForm">
                     <input type="hidden" name="admin_id" value="<?= $admin['id'] ?>">
                     
-                    <div class="form-check mt-3">
-                        <input class="form-check-input" type="checkbox" id="confirmDeactivate" required>
-                        <label class="form-check-label" for="confirmDeactivate">
-                            Je confirme vouloir désactiver ce compte administrateur
-                        </label>
+                    <div class="confirmation-section mt-4 pt-3 border-top">
+                        <div class="form-check p-3 bg-light rounded-2">
+                            <input class="form-check-input" type="checkbox" id="confirmDeactivate" required
+                                   style="width: 20px; height: 20px;">
+                            <label class="form-check-label ms-3 fw-medium" for="confirmDeactivate">
+                                Je confirme vouloir désactiver ce compte administrateur.
+                                <span class="text-danger">Cette action est réversible.</span>
+                            </label>
+                            <div class="form-text text-muted small mt-2">
+                                Vous pourrez réactiver ce compte ultérieurement depuis la liste des administrateurs.
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="submit" form="deactivateForm" class="btn btn-danger" id="confirmDeactivateBtn" disabled>
-                    <i class="fas fa-user-slash me-1"></i> Désactiver
+            
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Annuler
+                </button>
+                <button type="submit" form="deactivateForm" class="btn btn-danger px-4 py-2" id="confirmDeactivateBtn" disabled>
+                    <i class="fas fa-user-slash me-2"></i>
+                    Désactiver le compte
                 </button>
             </div>
         </div>
@@ -714,36 +1269,122 @@ include 'src/views/partials/sidebar_canonique.php';
 </div>
 <?php endif; ?>
 
-<!-- Hidden forms for activate and delete actions -->
-<form id="activateForm" action="activate_admin.php" method="POST" style="display:none">
-    <input type="hidden" name="admin_id" value="<?= $admin['id'] ?>">
-</form>
-
-<!-- Modal : Supprimer définitivement -->
+<!-- ================= MODAL : SUPPRIMER DÉFINITIVEMENT ================= -->
 <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
 <div class="modal fade" id="deleteModalPermanent" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i> Supprimer définitivement</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <h6 class="alert-heading">Suppression définitive</h6>
-                    <p>Cette action supprimera définitivement l'administrateur et toutes ses données associées. Cette opération est irréversible.</p>
+            <div class="modal-header bg-gradient-dark text-white border-0 position-relative">
+                <div class="modal-header-content">
+                    <h5 class="modal-title d-flex align-items-center">
+                        <i class="fas fa-skull-crossbones me-2"></i>
+                        Supprimer définitivement
+                    </h5>
+                    <p class="modal-subtitle mb-0 text-white-75 small">Action irréversible et définitive</p>
                 </div>
-                <form action="supprimer_admin_def.php" method="POST" id="permanentDeleteForm">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Alerte danger extrême -->
+                <div class="alert alert-dark border-0 shadow-sm">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-radiation-alt fa-2x text-dark"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="alert-heading fw-bold mb-2 text-danger">SUPPRESSION DÉFINITIVE</h6>
+                            <p class="mb-0">
+                                Cette action supprimera <strong class="text-dark">définitivement</strong> l'administrateur 
+                                <strong class="text-dark"><?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?></strong>
+                                et <u>toutes ses données associées</u>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Liste des suppressions -->
+                <div class="deletion-list mt-4">
+                    <h6 class="fw-semibold mb-3 d-flex align-items-center">
+                        <i class="fas fa-trash-alt text-danger me-2"></i>
+                        Données qui seront supprimées
+                    </h6>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-user text-danger me-3"></i>
+                            <div>
+                                <div class="fw-medium">Compte administrateur</div>
+                                <div class="text-muted small">Profil, identifiants, permissions</div>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-history text-danger me-3"></i>
+                            <div>
+                                <div class="fw-medium">Historique d'activité</div>
+                                <div class="text-muted small">Toutes les actions et connexions</div>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-key text-danger me-3"></i>
+                            <div>
+                                <div class="fw-medium">Badges et accès</div>
+                                <div class="text-muted small">Tous les tokens d'accès générés</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Avertissement final -->
+                <div class="final-warning mt-4 pt-3 border-top">
+                    <div class="warning-content p-3 bg-danger bg-opacity-10 rounded-2 border-start border-4 border-danger">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                            <h6 class="mb-0 fw-bold text-danger">CETTE ACTION EST IRRÉVERSIBLE</h6>
+                        </div>
+                        <p class="mb-0 text-dark small">
+                            Une fois confirmée, la suppression ne pourra être annulée.
+                            Toutes les données seront effacées définitivement.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Formulaire de confirmation -->
+                <form action="supprimer_admin_def.php" method="POST" id="permanentDeleteForm" class="mt-4">
                     <input type="hidden" name="admin_id" value="<?= $admin['id'] ?>">
-                    <div class="mb-3">
-                        <label for="confirmText" class="form-label">Tapez <strong>SUPPRIMER</strong> pour confirmer</label>
-                        <input type="text" id="confirmText" name="confirm_text" class="form-control" required>
+                    
+                    <div class="confirmation-section">
+                        <label for="confirmText" class="form-label fw-medium">
+                            Pour confirmer, tapez <strong class="text-danger">SUPPRIMER</strong>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-keyboard text-muted"></i>
+                            </span>
+                            <input type="text" id="confirmText" name="confirm_text" 
+                                   class="form-control ps-0" 
+                                   required
+                                   placeholder="Tapez SUPPRIMER ici"
+                                   pattern="^SUPPRIMER$">
+                            <div class="invalid-feedback">
+                                Vous devez taper exactement "SUPPRIMER" pour confirmer.
+                            </div>
+                        </div>
+                        <div class="form-text text-muted small mt-2">
+                            Cette mesure de sécurité empêche les suppressions accidentelles.
+                        </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="submit" form="permanentDeleteForm" class="btn btn-danger">Supprimer</button>
+            
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Annuler
+                </button>
+                <button type="submit" form="permanentDeleteForm" class="btn btn-dark px-4 py-2" id="confirmDeleteBtn">
+                    <i class="fas fa-skull-crossbones me-2"></i>
+                    Supprimer définitivement
+                </button>
             </div>
         </div>
     </div>
@@ -1451,24 +2092,85 @@ document.addEventListener('submit', function(e) {
 </script>
 
 <style>
-/* Variables spécifiques au profil admin */
+/* ============================
+   VARIABLES DU THÈME CLAIR
+   ============================ */
+:root {
+    --primary: #4361ee;
+    --primary-dark: #3a56d4;
+    --primary-light: #eef2ff;
+    --secondary: #6c757d;
+    --success: #28a745;
+    --info: #17a2b8;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --dark: #2d3748;
+    --light: #f8f9fa;
+    --light-gray: #e9ecef;
+    --border-color: #dee2e6;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --gradient-primary: linear-gradient(135deg, #4361ee 0%, #3a56d4 100%);
+    --gradient-success: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    --gradient-danger: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    --gradient-warning: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+/* ============================
+   STRUCTURE PRINCIPALE
+   ============================ */
 .admin-profile-container {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
-    color: #2124287a;
-    /* use central page background variable so theme controls canvas appearance */
-    background: var(--page-bg-gradient, var(--page-bg)) !important;
+    color: #2d3748;
+    background: linear-gradient(135deg, #f5f7ff 0%, #f0f2ff 100%);
     min-height: 100vh;
-    padding: 0.5rem;
+    padding: 1.5rem 1rem;
     max-width: 1400px;
     margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
 }
 
+.admin-profile-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 400px;
+    background: linear-gradient(135deg, rgba(67, 97, 238, 0.05) 0%, rgba(58, 86, 212, 0.03) 100%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* ============================
+   HEADER & EN-TÊTE
+   ============================ */
 .admin-profile-header {
     margin-bottom: 2.5rem;
+    animation: slideDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Avatar administrateur */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================
+   AVATAR ADMINISTRATEUR
+   ============================ */
 .admin-avatar-initials {
     width: 120px;
     height: 120px;
@@ -1480,42 +2182,107 @@ document.addEventListener('submit', function(e) {
     font-weight: 700;
     margin: 0 auto;
     border: 4px solid white;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
 }
 
-/* Badges Administrateur */
+.admin-avatar-initials::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+    transform: rotate(45deg);
+    transition: transform 0.6s ease;
+}
+
+.admin-avatar-initials:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 35px rgba(67, 97, 238, 0.3);
+}
+
+.admin-avatar-initials:hover::before {
+    transform: rotate(45deg) translateX(100%);
+}
+
+.bg-gradient-super-admin {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+}
+
+.bg-gradient-admin {
+    background: var(--gradient-primary);
+}
+
+/* ============================
+   BADGES ADMINISTRATEUR
+   ============================ */
 .admin-badge-container {
-    margin-bottom: 1rem;
+    margin: 1.5rem 0;
 }
 
 .admin-badge {
     display: inline-block;
-    padding: 0.5rem 1rem;
+    padding: 0.625rem 1.25rem;
     border-radius: 50px;
     font-weight: 600;
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
-    border: 2px solid transparent;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    animation: badgeAppear 0.5s ease-out;
+    animation-delay: var(--animation-delay, 0s);
+    animation-fill-mode: both;
 }
 
-.admin-badge:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+@keyframes badgeAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .super-admin-badge {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    background: var(--gradient-danger);
     color: white;
-    border-color: #dc3545;
 }
 
 .admin-badge {
-    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    background: var(--gradient-primary);
     color: white;
-    border-color: #0d6efd;
+}
+
+.admin-badge::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.admin-badge:hover::after {
+    transform: translateX(100%);
+}
+
+.admin-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
 }
 
 .admin-badges-small {
@@ -1523,23 +2290,34 @@ document.addEventListener('submit', function(e) {
     flex-wrap: wrap;
     gap: 0.5rem;
     justify-content: center;
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
 }
 
 .badge-hover {
-    transition: all 0.2s ease;
+    transition: var(--transition);
     cursor: pointer;
     border: 1px solid transparent;
+    animation: badgeFloat 4s ease-in-out infinite;
+    animation-delay: calc(var(--animation-delay, 0s) * 0.5);
+}
+
+@keyframes badgeFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
 }
 
 .badge-hover:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-sm);
 }
 
 .badge-clickable {
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition);
     position: relative;
     overflow: hidden;
 }
@@ -1554,295 +2332,29 @@ document.addEventListener('submit', function(e) {
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.3);
     transform: translate(-50%, -50%);
-    transition: width 0.3s, height 0.3s;
+    transition: width 0.4s, height 0.4s;
 }
 
 .badge-clickable:active::after {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
 }
 
-/* Badges spécifiques */
-.badge-super-admin {
-    background: #dc3545;
-    color: white;
-}
-
-.badge-admin {
-    background: #0d6efd;
-    color: white;
-}
-
-.badge-active {
-    background: #198754;
-    color: white;
-}
-
-.badge-performance {
-    background: #20c997;
-    color: white;
-}
-
-/* Modal Badge */
-.badge-modal-content {
-    transition: all 0.3s ease;
-}
-
-.badge-large {
-    animation: badgePulse 2s infinite;
-}
-
-@keyframes badgePulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-@keyframes badgeZoomIn {
-    from {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-@keyframes badgeFloat {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-5px); }
-    100% { transform: translateY(0px); }
-}
-
-.badge-animate {
-    animation: badgeFloat 3s ease-in-out infinite;
-    animation-delay: var(--animation-delay, 0s);
-}
-
-/* Cartes */
+/* ============================
+   CARTES PROFESSIONNELLES
+   ============================ */
 .admin-profile-card {
     background: white;
-    border-radius: 1rem;
-    border: 1px solid #e2e8f0;
-    /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); */
-    transition: all 0.3s ease;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
     overflow: hidden;
-    /* margin-bottom: 1.5rem; */
+    position: relative;
+    animation: cardAppear 0.6s ease-out;
+    animation-fill-mode: both;
 }
 
-.admin-profile-card:hover {
-    /* box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); */
-    transform: translateY(-2px);
-}
-
-.admin-profile-card .card-header {
-    background: linear-gradient(135deg, #f8fafc 0%, white 100%);
-    border-bottom: 1px solid #e2e8f0;
-    padding: 1.25rem 1.5rem;
-}
-
-.admin-profile-card .card-body {
-    padding: 0.5rem;
-}
-
-/* Grille d'informations */
-.admin-info-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.info-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 0.75rem;
-    background: #f8fafc;
-    border-radius: 0.75rem;
-    transition: background-color 0.2s ease;
-}
-
-.info-item:hover {
-    background: #f1f5f9;
-}
-
-.info-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 0.75rem;
-    background: #dbeafe;
-    color: #2563eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 1.125rem;
-}
-
-.info-content {
-    flex: 1;
-}
-
-.info-label {
-    font-size: 0.75rem;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.info-value {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #2c3e50;
-}
-.card-title .h4 .icon {
-    color: #ffff;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #ffffff;
-}
-
-.info-value a {
-    color: #2563eb;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.info-value a:hover {
-    color: #1d4ed8;
-    text-decoration: underline;
-}
-
-/* Informations du compte */
-.account-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.account-info .info-item {
-    background: transparent;
-    padding: 0.5rem 0;
-    border-radius: 0;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.account-info .info-item:last-child {
-    border-bottom: none;
-}
-
-.account-info .info-label {
-    width: 140px;
-    flex-shrink: 0;
-}
-
-/* Statistiques */
-.stats-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.stat-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.5rem;
-    background: #f8fafc;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-
-.stat-item:hover {
-    background: white;
-    border-color: #3b82f6;
-    transform: translateX(4px);
-}
-
-.stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
-.bg-primary-light { background-color: #dbeafe; }
-.bg-danger-light { background-color: #fee2e2; }
-.bg-success-light { background-color: #d1fae5; }
-.bg-info-light { background-color: #dbeafe; }
-
-.stat-content {
-    flex: 1;
-}
-
-.stat-number {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #2c3e50;
-    line-height: 1;
-    margin-bottom: 0.25rem;
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 0.125rem;
-}
-
-.stat-subtext {
-    font-size: 0.75rem;
-    color: #94a3b8;
-}
-
-/* Actions rapides */
-.quick-actions .btn {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0.75rem 1rem;
-    border-radius: 0.75rem;
-    border: 2px solid;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    text-align: left;
-}
-
-.quick-actions .btn:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Indicateur de force du mot de passe */
-.password-strength {
-    display: none;
-}
-
-.strength-meter {
-    height: 6px;
-    background: #e2e8f0;
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 0.5rem;
-}
-
-.strength-bar {
-    height: 100%;
-    width: 0;
-    border-radius: 3px;
-    transition: width 0.3s ease, background-color 0.3s ease;
-}
-
-/* Animation des cartes */
-@keyframes fadeInUp {
+@keyframes cardAppear {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -1853,15 +2365,411 @@ document.addEventListener('submit', function(e) {
     }
 }
 
-.card-animate {
-    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    opacity: 0;
+.admin-profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
 }
 
-/* Responsive */
+.admin-profile-card:hover::before {
+    transform: scaleX(1);
+}
+
+.admin-profile-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(67, 97, 238, 0.2);
+}
+
+.admin-profile-card .card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, white 100%);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+    position: relative;
+}
+
+.admin-profile-card .card-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 1.5rem;
+    right: 1.5rem;
+    height: 2px;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.admin-profile-card:hover .card-header::after {
+    transform: scaleX(1);
+}
+
+.admin-profile-card .card-body {
+    padding: 1.5rem;
+}
+
+/* ============================
+   GRILLE D'INFORMATIONS
+   ============================ */
+.admin-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    animation: infoItemAppear 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+@keyframes infoItemAppear {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.info-item:hover {
+    background: white;
+    border-color: var(--primary);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+.info-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    transition: var(--transition);
+}
+
+.info-item:hover .info-icon {
+    transform: scale(1.1) rotate(5deg);
+    background: var(--primary);
+    color: white;
+}
+
+.info-content {
+    flex: 1;
+}
+
+.info-label {
+    font-size: 0.75rem;
+    color: var(--secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+.info-value a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.info-value a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* ============================
+   STATISTIQUES
+   ============================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    padding: 1.5rem;
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    text-align: center;
+    animation: statCardAppear 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+@keyframes statCardAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.stat-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-md);
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+    transition: var(--transition);
+}
+
+.stat-card:hover .stat-icon {
+    transform: scale(1.1) rotate(5deg);
+    background: var(--primary);
+    color: white;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--secondary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-trend {
+    font-size: 0.8rem;
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+/* ============================
+   ACTIONS RAPIDES
+   ============================ */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.quick-actions .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    transition: var(--transition);
+    gap: 0.5rem;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-actions .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.quick-actions .btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.quick-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.quick-actions .btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.quick-actions .btn-warning {
+    background: var(--gradient-warning);
+    color: #212529;
+}
+
+.quick-actions .btn-success {
+    background: var(--gradient-success);
+    color: white;
+}
+
+.quick-actions .btn-danger {
+    background: var(--gradient-danger);
+    color: white;
+}
+
+.quick-actions .btn-outline-primary {
+    background: transparent;
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.quick-actions .btn-outline-primary:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* ============================
+   ANIMATIONS GLOBALES
+   ============================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Classes d'animation */
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.animate-slide-right {
+    animation: slideInRight 0.6s ease-out;
+}
+
+.animate-slide-left {
+    animation: slideInLeft 0.6s ease-out;
+}
+
+/* ============================
+   EFFETS DE PULSATION
+   ============================ */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+    }
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+/* ============================
+   LOADING SKELETON
+   ============================ */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ============================
+   RESPONSIVE DESIGN
+   ============================ */
+@media (max-width: 1200px) {
+    .admin-profile-container {
+        max-width: 100%;
+        padding: 1.25rem;
+    }
+}
+
 @media (max-width: 992px) {
     .admin-profile-container {
-        padding: 0.5rem;
+        padding: 1rem;
     }
     
     .admin-avatar-initials {
@@ -1870,67 +2778,37 @@ document.addEventListener('submit', function(e) {
         font-size: 2rem;
     }
     
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        font-size: 1.25rem;
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
     
-    .stat-number {
-        font-size: 1.5rem;
-    }
-    
-    .admin-badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.8rem;
+    .admin-profile-card .card-body {
+        padding: 1.25rem;
     }
 }
 
 @media (max-width: 768px) {
     .admin-profile-container {
-        padding: 0.5rem;
-    }
-    
-    .admin-profile-header .d-flex {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-    }
-    
-    .admin-profile-card .card-body {
-        padding: 0.5rem;
-    }
-    
-    .account-info .info-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    
-    .account-info .info-label {
-        width: 100%;
-    }
-    
-    .quick-actions .btn {
-        justify-content: center;
-        text-align: center;
-    }
-    
-    .admin-badges-small {
-        flex-direction: column;
-        align-items: center;
-    }
-}
-
-@media (max-width: 576px) {
-    .admin-profile-container {
         padding: 0.75rem;
+    }
+    
+    .admin-profile-header {
+        margin-bottom: 1.5rem;
     }
     
     .admin-avatar-initials {
         width: 80px;
         height: 80px;
         font-size: 1.5rem;
+    }
+    
+    .admin-badge {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
     }
     
     .info-item {
@@ -1940,117 +2818,199 @@ document.addEventListener('submit', function(e) {
     }
     
     .info-icon {
-        margin: 0 auto;
-    }
-    
-    .stat-item {
-        flex-direction: column;
-        text-align: center;
-        gap: 0.75rem;
-    }
-    
-    .stat-icon {
-        margin: 0 auto;
-    }
-    
-    .admin-badge {
-        font-size: 0.75rem;
-        padding: 0.3rem 0.6rem;
-    }
-}
-
-/* Mode sombre */
-@media (prefers-color-scheme: dark) {
-    .admin-profile-container {
-        background: #7f8c8d
-        color: #f1f5f9;
-    }
-}
-
-/* Disabled action (hover allowed but not clickable) */
-.disabled-action {
-    opacity: 0.85;
-}
-.disabled-action .btn,
-.disabled-action a {
-    pointer-events: auto; /* keep hover */
-}
-.disabled-action .btn.disabled-clickable,
-.disabled-action a.disabled-clickable {
-    cursor: default;
-}
-
-/* Classe pour gérer les éléments non cliquables (tooltip-style) */
-.disabled-clickable {
-    pointer-events: auto;
-    cursor: default !important;
-    opacity: 0.9;
-}
-
-
-
-    
-    .admin-profile-card {
-        /* background: #2c3e50; */
-        border-color: #5a5959ff;
-    }
-    
-    /* .admin-profile-card .card-header {
-        background: linear-gradient(135deg, #2c3e50 0%, #ffff 100%); */
-        border-color: #475569;
-    }
-    
-    .admin-avatar-initials {
-        border-color: #ffff;
-    }
-    
-    .info-item,
-    .stat-item {
-        background: #ffff;
-        border-color: #475569;
-    }
-    
-    .info-item:hover,
-    .stat-item:hover {
-        background: #475569;
-    }
-    
-    .info-value,
-    .stat-number {
-        color: #f1f5f9;
-    }
-    
-    .info-label,
-    .stat-label {
-        color: #94a3b8;
-    }
-    
-    .info-icon {
-        background: #475569;
-        color: #60a5fa;
-    }
-    
-    .account-info .info-item {
-        border-color: #475569;
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
     }
     
     .quick-actions .btn {
-        background: #ffff;
+        padding: 0.75rem;
+        font-size: 0.9rem;
     }
     
-    .quick-actions .btn:hover {
-        background: #475569;
+    .admin-profile-card .card-body {
+        padding: 1rem;
     }
     
-    /* Badges en mode sombre */
-    .admin-badge {
-        opacity: 0.9;
-    }
-    
-    .admin-badge:hover {
-        opacity: 1;
+    .admin-profile-card .card-header {
+        padding: 1rem;
     }
 }
+
+@media (max-width: 576px) {
+    .admin-profile-container {
+        padding: 0.5rem;
+    }
+    
+    .admin-avatar-initials {
+        width: 70px;
+        height: 70px;
+        font-size: 1.25rem;
+    }
+    
+    .admin-badge {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.25rem;
+    }
+    
+    .admin-badges-small {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* ============================
+   TRANSITIONS DE PAGES
+   ============================ */
+.page-transition-enter {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.page-transition-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s, transform 0.5s;
+}
+
+.page-transition-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.page-transition-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.5s, transform 0.5s;
+}
+
+/* ============================
+   ACCESSIBILITÉ
+   ============================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ============================
+   IMPRESSION
+   ============================ */
+@media print {
+    .admin-profile-container {
+        background: white !important;
+        padding: 0 !important;
+    }
+    
+    .admin-profile-card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        break-inside: avoid;
+    }
+    
+    .quick-actions,
+    .admin-badge:hover,
+    .info-item:hover,
+    .stat-card:hover {
+        transform: none !important;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* ============================
+   ÉTATS DE CHARGEMENT
+   ============================ */
+.loading-state {
+    pointer-events: none;
+    opacity: 0.7;
+    position: relative;
+}
+
+.loading-state::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 10;
+}
+
+.loading-state::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid var(--primary-light);
+    border-top: 3px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 11;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================
+   TOOLTIPS PERSONNALISÉS
+   ============================ */
+.tooltip-custom {
+    position: relative;
+}
+
+.tooltip-custom::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 0.75rem;
+    background: var(--dark);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.tooltip-custom:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
 </style>
+            </div>
+        </main>
+    </div>
 
 <?php include 'partials/footer.php'; ?>

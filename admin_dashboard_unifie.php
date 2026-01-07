@@ -112,6 +112,7 @@ $totalEmployes = count($employes);
 $total_pages = ceil($totalEmployes / $perPage);
 $employes = array_slice($employes, ($page - 1) * $perPage, $perPage);
 
+
 // Variables supplémentaires pour les partials
 // liste des départements pour les filtres
 $liste_departements = $pdo->query("SELECT DISTINCT departement FROM employes WHERE departement IS NOT NULL ORDER BY departement")->fetchAll(PDO::FETCH_COLUMN);

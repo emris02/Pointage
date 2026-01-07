@@ -35,17 +35,18 @@ if ($pointageId <= 0 || empty($raison)) {
 }
 
 try {
-    // Verify that pointage exists and get employe_id
+    // Vérifier que le pointage existe
     $stmt = $pdo->prepare('SELECT id, employe_id, type FROM pointages WHERE id = ?');
     $stmt->execute([$pointageId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
     if (!$row) {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Pointage not found']);
         exit();
     }
 
-    // Ensure we justify only an 'arrivee'
+    // On ne justifie que les arrivées
     if (strtolower($row['type']) !== 'arrivee') {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Justification only allowed for arrival pointages']);
@@ -54,6 +55,42 @@ try {
 
     $employeId = (int)$row['employe_id'];
 
-    // Handle file upload if present ('piece_jointe')
+    // Gestion du fichier uploadé si présent
     $fichierPath = null;
+    if (!empty($_FILES['piece_jointe']['tmp_name'])) {
+        $uploadDir = __DIR__ . '/../uploads/justificatifs/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $filename = basename($_FILES['piece_jointe']['name']);
+        $targetPath = $uploadDir . time() . '_' . $filename;
+
+        if (move_uploaded_file($_FILES['piece_jointe']['tmp_name'], $targetPath)) {
+            $fichierPath = $targetPath;
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to upload file']);
+            exit();
+        }
+    }
+
+    // Insérer la justification
+    $stmt = $pdo->prepare('INSERT INTO retards_justifies (pointage_id, employe_id, raison, details, piece_jointe, created_at) VALUES (?, ?, ?, ?, ?, NOW())');
+    $stmt->execute([$pointageId, $employeId, $raison, $details, $fichierPath]);
+
+    $retardId = $pdo->lastInsertId();
+
+    echo json_encode([
+        'success' => true,
+        'retard_id' => $retardId,
+        'message' => 'Justification saved'
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Server error: ' . $e->getMessage()
+    ]);
 }

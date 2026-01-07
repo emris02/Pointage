@@ -282,6 +282,13 @@ if (!class_exists(__NAMESPACE__ . '\\Pointage', false)) {
         /**
          * Calcule la durée totale des pauses entre deux timestamps (inclusif)
          */
+        public function getBreakDurationBetween(int $employeeId, string $from, string $to): int {
+            return $this->calculateBreakDurationBetween($employeeId, $from, $to);
+        }
+
+        /**
+         * Calcule la durée totale des pauses entre deux timestamps (inclusif) - méthode privée
+         */
         private function calculateBreakDurationBetween(int $employeeId, string $from, string $to): int {
             $sql = "SELECT 
                 SUM(CASE 
@@ -444,6 +451,7 @@ if (!class_exists(__NAMESPACE__ . '\\Pointage', false)) {
 
         /**
          * Résumé mensuel pour un employé (par défaut mois courant si year/month non fournis)
+         * Méthode manquante qui causait l'erreur
          */
         public function getEmployeeMonthlySummary(int $employeeId, ?int $month = null, ?int $year = null): array {
             $month = $month ?? (int)date('m');
@@ -583,6 +591,38 @@ if (!class_exists(__NAMESPACE__ . '\\Pointage', false)) {
         public function delete(int $pointageId): bool {
             $stmt = $this->db->prepare("DELETE FROM pointages WHERE id = ?");
             return $stmt->execute([$pointageId]);
+        }
+
+        /**
+         * Récupère les pointages d'un jour spécifique
+         */
+        public function getByDate(int $employeeId, string $date): array {
+            $sql = "SELECT * FROM pointages 
+                    WHERE employe_id = ? AND DATE(COALESCE(date_heure, date_pointage, created_at)) = ?
+                    ORDER BY COALESCE(date_heure, date_pointage, created_at) ASC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$employeeId, $date]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        /**
+         * Vérifie si un employé a déjà pointé aujourd'hui
+         */
+        public function hasPointedToday(int $employeeId, string $type = null): bool {
+            $sql = "SELECT COUNT(*) FROM pointages 
+                    WHERE employe_id = ? 
+                    AND DATE(COALESCE(date_heure, date_pointage, created_at)) = CURDATE()";
+            
+            if ($type) {
+                $sql .= " AND type = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$employeeId, $type]);
+            } else {
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$employeeId]);
+            }
+            
+            return $stmt->fetchColumn() > 0;
         }
     }
 }

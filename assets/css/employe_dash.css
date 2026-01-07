@@ -1,13 +1,13 @@
-/* =
+/* ===========================================
    FICHIER : employe_dash.css
    DESCRIPTION : Style principal du tableau de bord employé
    AUTEUR : Xpert Pro Mali
    VERSION : 2.0.0
-   = */
+   =========================================== */
 
-/* =
+/* ===========================================
    VARIABLES CSS PERSONNALISÉES
-   = */
+   =========================================== */
 :root {
     /* Palette de couleurs principale */
     --primary-color: #0672e4;
@@ -49,9 +49,9 @@
     --transition-slow: 500ms ease;
 }
 
-/* =
+/* ===========================================
    RÉINITIALISATION ET STYLES DE BASE
-   = */
+   =========================================== */
 * {
     margin: 0;
     padding: 0;
@@ -67,9 +67,9 @@
     min-height: 100vh;
 }
 
-/* =
+/* ===========================================
    ÉCRAN DE CHARGEMENT
-   = */
+   =========================================== */
 .page-loader {
     position: fixed;
     top: 0;
@@ -121,9 +121,9 @@
     50% { opacity: 0.7; }
 }
 
-/* =
+/* ===========================================
    LAYOUT PRINCIPAL
-   = */
+   =========================================== */
 .employe-layout {
     display: grid;
     grid-template-columns: 1fr;
@@ -131,9 +131,9 @@
     min-height: 100vh;
 }
 
-/* =
+/* ===========================================
    HEADER PRINCIPAL
-   = */
+   =========================================== */
 .employe-header {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     padding: 0.6rem 0; /* reduced height for compact header */
@@ -307,9 +307,9 @@
     box-shadow: var(--hover-shadow);
 }
 
-/* =
+/* ===========================================
    SECTIONS PRINCIPALES
-   = */
+   =========================================== */
 .profile-section,
 .stats-section,
 .calendar-section,
@@ -356,9 +356,9 @@
     font-size: 1.25em;
 }
 
-/* =
+/* ===========================================
    SECTION PROFIL
-   = */
+   =========================================== */
 .profile-avatar-container {
     position: relative;
     display: flex;
@@ -454,9 +454,9 @@
     text-decoration: underline;
 }
 
-/* =
+/* ===========================================
    SECTION STATISTIQUES
-   = */
+   =========================================== */
 .employe-stats {
     margin: var(--spacing-md) 0;
     display: flex;
@@ -528,9 +528,9 @@
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* =
+/* ===========================================
    CALENDRIER
-   = */
+   =========================================== */
 .calendar-section .section-header {
     flex-wrap: wrap;
     gap: 1rem;
@@ -590,9 +590,9 @@
     border: 1px solid var(--gray-light);
 }
 
-/* =
+/* ===========================================
    POINTAGES RÉCENTS
-   = */
+   =========================================== */
 .pointages-list {
     max-height: 400px;
     overflow-y: auto;
@@ -685,9 +685,9 @@
     border: none;
 }
 
-/* =
+/* ===========================================
    SECTION BADGE
-   = */
+   =========================================== */
 .badge-section {
     animation: slideInLeft var(--transition-slow);
 }
@@ -802,9 +802,9 @@
     margin-bottom: var(--spacing-sm);
 }
 
-/* ======
+/* =======================================================
    HEADER
-====== */
+======================================================= */
 .header-dashboard {
     position: sticky;
     top: 0;
@@ -827,9 +827,9 @@
     justify-content: center;
 }
 
-/* ======
+/* =======================================================
    BOUTON DROPDOWN
-====== */
+======================================================= */
 .user-dropdown-btn {
     background: white !important;
     border: 1px solid var(--border) !important;
@@ -858,9 +858,9 @@
     color: var(--primary) !important;
 }
 
-/* ======
+/* =======================================================
    AVATARS
-====== */
+======================================================= */
 .user-avatar-wrapper {
     position: relative;
 }
@@ -903,9 +903,9 @@
     font-size: 1.1rem;
 }
 
-/* ======
+/* =======================================================
    INFOS UTILISATEUR
-====== */
+======================================================= */
 .user-info {
     min-width: 100px;
 }
@@ -921,9 +921,9 @@
     line-height: 1.2;
 }
 
-/* ======
+/* =======================================================
    ICÔNE FLÈCHE
-====== */
+======================================================= */
 .dropdown-arrow {
     color: var(--text-light);
     font-size: 0.8rem;
@@ -931,9 +931,9 @@
     margin-left: 4px;
 }
 
-/* ======
+/* =======================================================
    MENU DROPDOWN
-====== */
+======================================================= */
 .dropdown-menu {
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -978,9 +978,9 @@
     margin: 0.5rem 1rem;
 }
 
-/* ======
+/* =======================================================
    ITEMS DROPDOWN
-====== */
+======================================================= */
 .dropdown-item {
     padding: 0.75rem 1rem;
     border-radius: 8px;
@@ -1020,9 +1020,9 @@
     color: var(--danger) !important;
 }
 
-/* ======
+/* =======================================================
    OVERLAY MOBILE
-====== */
+======================================================= */
 .dropdown-overlay {
     position: fixed;
     top: 0;
@@ -1041,9 +1041,9 @@
     opacity: 1;
 }
 
-/* ======
+/* =======================================================
    RESPONSIVE MOBILE
-====== */
+======================================================= */
 @media (max-width: 991.98px) {
     /* Header fixe */
     .header-dashboard {
@@ -1123,9 +1123,9 @@
     }
 }
 
-/* ======
+/* =======================================================
    CONTENU PRINCIPAL
-====== */
+======================================================= */
 .main-content-container {
     min-height: calc(100vh - 70px);
     background: var(--light);
@@ -1138,9 +1138,9 @@
     }
 }
 
-/* ======
+/* =======================================================
    ACCESSIBILITÉ
-====== */
+======================================================= */
 @media (prefers-reduced-motion: reduce) {
     .dropdown-arrow,
     .dropdown-menu,
@@ -1151,9 +1151,9 @@
     }
 }
 
-/* ======
+/* =======================================================
    IMPRESSION
-====== */
+======================================================= */
 @media print {
     .header-dashboard,
     .dropdown-overlay {
@@ -1167,9 +1167,9 @@
     }
 }
 
-/* =
+/* ===========================================
    INFORMATIONS COMPLÉMENTAIRES
-   = */
+   =========================================== */
 .info-list {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
@@ -1209,9 +1209,9 @@
     color: var(--dark-color);
 }
 
-/* =
+/* ===========================================
    MODAL BADGE
-   = */
+   =========================================== */
 #badgeModal .modal-content {
     border: none;
     overflow: hidden;
@@ -1248,9 +1248,9 @@
     color: var(--gray-color);
 }
 
-/* =
+/* ===========================================
    ANIMATIONS
-   = */
+   =========================================== */
 .fade-in-up {
     animation: fadeInUp var(--transition-slow);
 }
@@ -1259,9 +1259,9 @@
     animation: slideInLeft var(--transition-slow);
 }
 
-/* =
+/* ===========================================
    RESPONSIVE DESIGN
-   = */
+   =========================================== */
 
 /* Tablettes (768px - 1023px) */
 @media (max-width: 1023px) {
@@ -1423,9 +1423,9 @@
     }
 }
 
-/* =
+/* ===========================================
    ÉTATS SPÉCIFIQUES
-   = */
+   =========================================== */
 
 /* Mode sombre */
 @media (prefers-color-scheme: dark) {
@@ -1507,9 +1507,9 @@
     background: rgba(6, 214, 160, 0.05) !important;
 }
 
-/* =
+/* ===========================================
    UTILITAIRES
-   = */
+   =========================================== */
 .text-truncate-2 {
     display: -webkit-box;
     line-clamp: 2;
@@ -1657,9 +1657,9 @@
 .fs-2 { font-size: 1.5rem; }
 .fs-1 { font-size: 2rem; }
 
-/* =
+/* ===========================================
    ACCESSIBILITÉ
-   = */
+   =========================================== */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;
@@ -1704,9 +1704,9 @@ select:focus {
     }
 }
 
-/* =
+/* ===========================================
    IMPRESSION
-   = */
+   =========================================== */
 @media print {
     .page-loader,
     .employe-header,

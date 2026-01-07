@@ -9,19 +9,20 @@
 
 <?php if ($isSuperAdmin): ?>
 
-    <!-- HEADER -->
-    <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
-            <i class="fas fa-user-shield fa-lg text-primary"></i>
-            <h4 class="mb-0 fw-bold">Gestion des Administrateurs</h4>
+    <div class="card profile-card shadow-sm border">
+        <!-- HEADER -->
+        <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-user-shield fa-lg text-primary"></i>
+                <h4 class="mb-0 fw-bold">Gestion des Administrateurs</h4>
+            </div>
+
+            <a href="ajouter_admin.php" class="btn btn-primary btn-sm shadow-sm">
+                <i class="fas fa-plus-circle me-1"></i> Nouvel Admin
+            </a>
         </div>
 
-        <a href="ajouter_admin.php" class="btn btn-primary btn-sm shadow-sm">
-            <i class="fas fa-plus-circle me-1"></i> Nouvel Admin
-        </a>
-    </div>
-
-    <div class="card-body">
+        <div class="card-body">
 
         <!-- ACTION BAR -->
         <div class="d-flex justify-content-between flex-wrap mb-3 gap-2">
@@ -194,6 +195,7 @@
         </div>
 
         <?php endif; ?>
+        </div>
     </div>
 
 <?php endif; ?>

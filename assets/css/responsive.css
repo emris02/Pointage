@@ -1,7 +1,7 @@
-/* ======
+/* ===========================
    Responsive Global Styles
    Optimisé Desktop / Tablet / Mobile
-   ====== */
+   =========================== */
 
 /* 🌍 Base universelle */
 html {
@@ -21,9 +21,9 @@ p, a, label, input, button,
   color: #1f2937; /* gris sombre pour texte */
 }
 
-/* ======
+/* ===========================
    🔹 Breakpoints Responsive
-   ====== */
+   =========================== */
 
 /* Grand écran (≤ 1200px) */
 @media (max-width: 1200px) {
@@ -88,9 +88,9 @@ p, a, label, input, button,
   img, .card img, .profile-card img { max-width: 100%; height: auto; display: block; }
 }
 
-/* ======
+/* ===========================
    ✨ Animations Globales
-   ====== */
+   =========================== */
 
 /* Slide gauche */
 .slide-left-hide {
@@ -113,9 +113,9 @@ p, a, label, input, button,
   animation: fadeIn 0.5s ease-in;
 }
 
-/* ======
+/* ===========================
    🧩 Fluidité et accessibilité
-   ====== */
+   =========================== */
 * {
   box-sizing: border-box;
   transition: all 0.3s ease-in-out;
@@ -132,9 +132,9 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* ======
+/* ===========================
    🖨 Print Styles
-   ====== */
+   =========================== */
 @media print {
   .card, .btn, .profile-card, .stat-card,
   .calendar-card, .pointages-card, .d-flex { display: block !important; }
