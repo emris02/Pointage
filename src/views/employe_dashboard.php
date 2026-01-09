@@ -178,9 +178,9 @@ $additionalCSS = ['public/assets/css/employe.css'];
                                 </div>
                                 
                                 <div class="d-flex flex-wrap gap-2 mt-4">
-                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                                        <i class="fas fa-user-edit me-1"></i> Modifier mon profil
-                                    </button>
+                                    <a href="modifier_employe.php?id=<?= (int)$employe['id'] ?>" class="btn btn-outline-primary">
+                                            <i class="fas fa-user-edit me-1"></i> Modifier mon profil
+                                        </a>
 
                                     <button class="btn btn-outline-info">
                                         <i class="fas fa-question-circle me-1"></i> Demander de l'aide

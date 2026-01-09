@@ -196,6 +196,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 byFile.classList.add('active');
                 return;
             }
+
+            // 2b. If no exact file match, try slug matching (useful for pages like demandes.php -> link containing 'demandes')
+            const slug = currentFile.replace(/\.[^/.]+$/, ''); // remove extension
+            if (slug) {
+                const bySlug = Array.from(links).find(l => {
+                    try {
+                        const href = (l.getAttribute('href') || '').toLowerCase();
+                        return href.includes(slug.toLowerCase());
+                    } catch (e) { return false; }
+                });
+                if (bySlug) {
+                    bySlug.classList.add('active');
+                    return;
+                }
+            }
         }
 
         // 3. If a section is targeted via hash

@@ -132,9 +132,14 @@ class BadgeScanner {
         this.elements.scanContainer = document.querySelector('.scan-container');
         this.elements.cameraView = document.querySelector('.camera-view');
         
-        // Modals Bootstrap
+        // Modals Bootstrap (create only when element exists)
         if (typeof bootstrap !== 'undefined') {
-            this.elements.lateModal = new bootstrap.Modal('#lateModal');
+            const lateModalEl = document.getElementById('lateModal');
+            if (lateModalEl) {
+                this.elements.lateModal = new bootstrap.Modal(lateModalEl);
+            } else {
+                this.elements.lateModal = null;
+            }
         }
         
         this.validateDOMElements();

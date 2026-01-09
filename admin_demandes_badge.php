@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php';
+require_once 'src/config/bootstrap.php';
 
 // Fonction de génération de badge intégrée
 function generateBadgeToken($employe_id) {

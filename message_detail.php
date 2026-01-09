@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php';
+require_once 'src/config/bootstrap.php';
 
 // Vérification authentification
 if (!isset($_SESSION['employe_id']) && !isset($_SESSION['admin_id'])) {

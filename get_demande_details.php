@@ -385,7 +385,7 @@ $total_notifications = $nombre_nouvelles_demandes;
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- bootstrap loaded from footer -->
     <script>
         // Initialiser le modal pour refuser une demande
         const rejectModal = document.getElementById('rejectModal');

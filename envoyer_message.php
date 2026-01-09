@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php';
+require_once 'src/config/bootstrap.php';
 
 // Vérification admin seulement
 if (!isset($_SESSION['admin_id'])) {

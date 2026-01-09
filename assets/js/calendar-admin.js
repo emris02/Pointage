@@ -160,8 +160,14 @@ class CalendarManager {
     }
 
     showEventDetails(event) {
-        const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
+        const modalEl = document.getElementById('eventDetailsModal');
         const modalBody = document.getElementById('eventDetailsBody');
+        if (!modalEl || typeof bootstrap === 'undefined') {
+            console.warn('eventDetailsModal not present or bootstrap missing — falling back to alert');
+            Swal.fire({ title: event.title || 'Détails', html: event.extendedProps?.description || 'Aucune description', icon: 'info' });
+            return;
+        }
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         
         modalBody.innerHTML = `
             <div class="event-details">
@@ -189,13 +195,17 @@ class CalendarManager {
     }
 
     showAddEventModal(dateStr = null) {
-        const modal = new bootstrap.Modal(document.getElementById('addEventModal'));
-        
-        if (dateStr) {
-            document.getElementById('eventDate').value = dateStr;
+        const addEl = document.getElementById('addEventModal');
+        if (!addEl || typeof bootstrap === 'undefined') {
+            console.warn('addEventModal not present or bootstrap missing — cannot open modal');
+            return;
         }
-        
-        modal.show();
+        const modal = bootstrap.Modal.getOrCreateInstance(addEl);
+        if (dateStr) {
+            const dateInput = document.getElementById('eventDate');
+            if (dateInput) dateInput.value = dateStr;
+        }
+        try { modal.show(); } catch (e) { console.warn('Unable to show addEventModal', e); }
     }
 
     updateEventDate(event) {
@@ -327,7 +337,13 @@ class CalendarManager {
             if (data.success) {
                 this.showNotification('Événement ajouté avec succès', 'success');
                 form.reset();
-                bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
+                const addEl = document.getElementById('addEventModal');
+                if (addEl && typeof bootstrap !== 'undefined') {
+                    const inst = bootstrap.Modal.getInstance(addEl);
+                    if (inst && typeof inst.hide === 'function') {
+                        try { inst.hide(); } catch (e) { console.warn('Unable to hide addEventModal', e); }
+                    }
+                }
                 this.loadEvents();
             } else {
                 this.showNotification('Erreur: ' + data.message, 'error');

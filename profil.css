@@ -662,3 +662,26 @@ body {
         padding: 0.4rem;
     }
 }
+
+/* Increase font-size by ~2px for mobile/tablet for code and common text elements */
+@media (max-width: 992px) {
+    code, pre { font-size: calc(1rem + 2px) !important; }
+    .timeline-time { font-size: calc(0.8rem + 2px) !important; }
+    .card-header { font-size: calc(0.95rem + 2px) !important; }
+    .card-header h5 { font-size: calc(1rem + 2px) !important; }
+    .list-group-item { font-size: calc(0.9rem + 2px) !important; }
+    .btn { font-size: calc(0.85rem + 2px) !important; }
+    .profile-name { font-size: calc(1.5rem + 2px) !important; }
+    .info-item .info-value, .info-item .info-label { font-size: calc(0.95rem + 2px) !important; }
+}
+
+@media (max-width: 576px) {
+    code, pre { font-size: calc(1rem + 2px) !important; }
+    .timeline-time { font-size: calc(0.8rem + 2px) !important; }
+    .card-header { font-size: calc(0.95rem + 2px) !important; }
+    .card-header h5 { font-size: calc(1rem + 2px) !important; }
+    .list-group-item { font-size: calc(0.85rem + 2px) !important; }
+    .btn { font-size: calc(0.9rem + 2px) !important; }
+    .profile-name { font-size: calc(1.3rem + 2px) !important; }
+    .info-item .info-value, .info-item .info-label { font-size: calc(0.9rem + 2px) !important; }
+}

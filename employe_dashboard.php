@@ -1586,9 +1586,9 @@ if ($showJustificationModal) {
                             </div>
                             
                             <div class="d-flex flex-wrap gap-2">
-                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                                <a href="modifier_employe.php?id=<?= (int)$employe['id'] ?>" class="btn btn-primary btn-sm">
                                     <i class="fas fa-user-edit me-1"></i>Modifier le profil
-                                </button>
+                                </a>
                                 <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editPasswordModal">
                                     <i class="fas fa-lock me-1"></i>Mot de passe
                                 </button>

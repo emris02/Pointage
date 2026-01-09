@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php';
+require_once 'src/config/bootstrap.php';
 
 // Vérification des autorisations
 if (!isset($_SESSION['role'])) {
@@ -115,33 +115,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modifier Employé</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .avatar-preview {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #ddd;
-        }
-        .file-upload-label {
-            cursor: pointer;
-            display: inline-block;
-            padding: 6px 12px;
-            border: 1px dashed #ced4da;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container py-5">
+<?php
+$pageTitle = 'Modifier Employé';
+$additionalCSS = ['assets/css/profil.css'];
+include 'partials/header.php';
+include 'src/views/partials/sidebar_canonique.php';
+?>
+
+<main class="main-content py-4">
+    <div class="container-fluid px-3 px-md-4">
+        <div class="form-centered-wrapper">
+            <div class="form-card-container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="card shadow">
@@ -227,8 +211,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </div>
     </div>
+</main>
 
-    <script>
+<script>
         // Aperçu de l'image sélectionnée
         document.getElementById('image').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -266,5 +251,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             e.target.value = value;
         });
     </script>
-</body>
-</html>
+
+<?php include 'partials/footer.php'; ?>

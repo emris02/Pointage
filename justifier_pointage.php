@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php';
+require_once 'src/config/bootstrap.php';
 
 // Vérification des autorisations admin
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {

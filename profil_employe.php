@@ -193,100 +193,100 @@ if ($isAdmin) {
 ?>
 
 <div class="main-container">
-    <!-- ================= PROFILE HEADER ================= -->
-    <header class="profile-header">
-        <div class="profile-info d-flex align-items-center justify-content-between flex-column flex-md-row">
-            
-            <!-- ===== AVATAR ===== -->
-            <div class="profile-avatar-wrapper position-relative mb-4 mb-md-0">
-                <?php
-                if (!empty($employe['photo'])) {
-                    if (strpos($employe['photo'], 'uploads/') !== false) {
-                        $avatarSrc = dirname($_SERVER['SCRIPT_NAME']) . '/image.php?f=' . urlencode(basename($employe['photo']));
-                    } else {
-                        $avatarSrc = $employe['photo'];
-                    }
-                } else {
-                    $avatarSrc = 'assets/img/profil.jpg';
-                }
-                ?>
-
-                <img src="<?= htmlspecialchars($avatarSrc) ?>"
-                     alt="<?= htmlspecialchars($employe['prenom'] ?? 'Employé') ?>"
-                     class="profile-avatar rounded-circle shadow-lg"
-                     onerror="this.src='assets/img/profil.jpg'">
-
-                <?php
-                $statusClass = ($employe['status'] ?? '') === 'active'
-                    ? 'status-online'
-                    : 'status-offline';
-                ?>
-                <span class="avatar-status <?= $statusClass ?> border-white border-2"></span>
-
-                <?php if (empty($employe['photo'])): ?>
-                    <div class="avatar-initials rounded-circle <?= $departementConfig['bg'] ?? 'bg-secondary' ?> d-flex align-items-center justify-content-center shadow">
-                        <?= $initiale ?? 'X' ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- ===== INFOS PROFIL ===== -->
-            <div class="profile-details ms-0 ms-md-4 text-center text-md-start flex-grow-1">
-                <h1 class="profile-name fw-bold mb-2">
-                    <?= htmlspecialchars(($employe['prenom'] ?? '') . ' ' . ($employe['nom'] ?? '')) ?>
-                </h1>
-
-                <p class="profile-title fs-5 text-muted mb-2">
-                    <i class="fas fa-briefcase me-2"></i>
-                    <?= htmlspecialchars($employe['poste'] ?? 'Non défini') ?>
-                </p>
-
-                <div class="profile-department badge <?= $departementConfig['text'] ?? 'text-muted bg-light' ?> px-3 py-2 fs-6">
-                    <i class="fas fa-building me-2"></i>
-                    <?= htmlspecialchars($departementLabel ?? 'Département inconnu') ?>
-                </div>
-
-                <div class="profile-meta mt-3 d-flex flex-column flex-sm-row justify-content-center justify-content-md-start gap-2 gap-sm-3">
-                    <span class="meta-item badge bg-light text-dark px-3 py-2">
-                        <i class="fas fa-hashtag me-1"></i>
-                        Matricule : XPERT-<?= strtoupper(substr($employe['departement'] ?? 'XXX', 0, 3)) ?><?= $employe['id'] ?? '0' ?>
-                    </span>
-
-                    <span class="meta-item badge bg-light text-dark px-3 py-2">
-                        <i class="fas fa-calendar-alt me-1"></i>
-                        Ancienneté : <?= $anciennete ?? 'N/A' ?>
-                    </span>
-                </div>
-            </div>
-
-            <!-- ===== ACTIONS ===== -->
-            <div class="profile-actions mt-4 mt-md-0 ms-auto d-flex align-items-center gap-2 flex-wrap justify-content-center">
-                <!-- TOGGLE COLLAPSE -->
-                <button class="btn btn-light profile-toggle rounded-circle"
-                        id="toggleProfileHeader"
-                        type="button"
-                        title="Réduire / Déployer">
-                    <i class="fas fa-chevron-up"></i>
-                </button>
-
-                <!-- RETOUR -->
-                <a href="<?= $isAdmin ? 'admin_dashboard_unifie.php' : 'employe_dashboard.php' ?>"
-                   class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> <span class="d-none d-md-inline">Retour</span>
-                </a>
-
-                <!-- CONTACT -->
-                <a href="mailto:<?= htmlspecialchars($employe['email'] ?? '') ?>"
-                   class="btn btn-primary">
-                    <i class="fas fa-envelope me-1"></i> <span class="d-none d-md-inline">Contacter</span>
-                </a>
-            </div>
-        </div>
-    </header>
 
     <!-- Contenu principal -->
     <main class="main-content py-4">
         <div class="container-fluid px-3 px-md-4">
+             <!-- ================= PROFILE HEADER ================= -->
+                <header class="profile-header">
+                    <div class="profile-info d-flex align-items-center justify-content-between flex-column flex-md-row">
+                        
+                        <!-- ===== AVATAR ===== -->
+                        <div class="profile-avatar-wrapper position-relative mb-4 mb-md-0">
+                            <?php
+                            if (!empty($employe['photo'])) {
+                                if (strpos($employe['photo'], 'uploads/') !== false) {
+                                    $avatarSrc = dirname($_SERVER['SCRIPT_NAME']) . '/image.php?f=' . urlencode(basename($employe['photo']));
+                                } else {
+                                    $avatarSrc = $employe['photo'];
+                                }
+                            } else {
+                                $avatarSrc = 'assets/img/profil.jpg';
+                            }
+                            ?>
+
+                            <img src="<?= htmlspecialchars($avatarSrc) ?>"
+                                alt="<?= htmlspecialchars($employe['prenom'] ?? 'Employé') ?>"
+                                class="profile-avatar rounded-circle shadow-lg"
+                                onerror="this.src='assets/img/profil.jpg'">
+
+                            <?php
+                            $statusClass = ($employe['status'] ?? '') === 'active'
+                                ? 'status-online'
+                                : 'status-offline';
+                            ?>
+                            <span class="avatar-status <?= $statusClass ?> border-white border-2"></span>
+
+                            <?php if (empty($employe['photo'])): ?>
+                                <div class="avatar-initials rounded-circle <?= $departementConfig['bg'] ?? 'bg-secondary' ?> d-flex align-items-center justify-content-center shadow">
+                                    <?= $initiale ?? 'X' ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- ===== INFOS PROFIL ===== -->
+                        <div class="profile-details ms-0 ms-md-4 text-center text-md-start flex-grow-1">
+                            <h1 class="profile-name fw-bold mb-2">
+                                <?= htmlspecialchars(($employe['prenom'] ?? '') . ' ' . ($employe['nom'] ?? '')) ?>
+                            </h1>
+
+                            <p class="profile-title fs-5 text-muted mb-2">
+                                <i class="fas fa-briefcase me-2"></i>
+                                <?= htmlspecialchars($employe['poste'] ?? 'Non défini') ?>
+                            </p>
+
+                            <div class="profile-department badge <?= $departementConfig['text'] ?? 'text-muted bg-light' ?> px-3 py-2 fs-6">
+                                <i class="fas fa-building me-2"></i>
+                                <?= htmlspecialchars($departementLabel ?? 'Département inconnu') ?>
+                            </div>
+
+                            <div class="profile-meta mt-3 d-flex flex-column flex-sm-row justify-content-center justify-content-md-start gap-2 gap-sm-3">
+                                <span class="meta-item badge bg-light text-dark px-3 py-2">
+                                    <i class="fas fa-hashtag me-1"></i>
+                                    Matricule : XPERT-<?= strtoupper(substr($employe['departement'] ?? 'XXX', 0, 3)) ?><?= $employe['id'] ?? '0' ?>
+                                </span>
+
+                                <span class="meta-item badge bg-light text-dark px-3 py-2">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    Ancienneté : <?= $anciennete ?? 'N/A' ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- ===== ACTIONS ===== -->
+                        <div class="profile-actions mt-4 mt-md-0 ms-auto d-flex align-items-center gap-2 flex-wrap justify-content-center">
+                            <!-- TOGGLE COLLAPSE -->
+                            <button class="btn btn-light profile-toggle rounded-circle"
+                                    id="toggleProfileHeader"
+                                    type="button"
+                                    title="Réduire / Déployer">
+                                <i class="fas fa-chevron-up"></i>
+                            </button>
+
+                            <!-- RETOUR -->
+                            <a href="<?= $isAdmin ? 'admin_dashboard_unifie.php' : 'employe_dashboard.php' ?>"
+                            class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> <span class="d-none d-md-inline">Retour</span>
+                            </a>
+
+                            <!-- CONTACT -->
+                            <a href="mailto:<?= htmlspecialchars($employe['email'] ?? '') ?>"
+                            class="btn btn-primary">
+                                <i class="fas fa-envelope me-1"></i> <span class="d-none d-md-inline">Contacter</span>
+                            </a>
+                        </div>
+                    </div>
+                </header>
             <!-- Messages d'alerte -->
             <?php if ($success_message): ?>
             <div class="alert alert-success alert-dismissible fade show mb-4 shadow-sm" role="alert">
@@ -1050,7 +1050,6 @@ document.getElementById('toggleProfileHeader').addEventListener('click', functio
 </div>
 
 <!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
@@ -1176,8 +1175,15 @@ function initInteractions() {
     const qrCode = document.querySelector('.qr-code-img');
     if (qrCode) {
         qrCode.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('badgeModal'));
-            modal.show();
+            const badgeModalEl = document.getElementById('badgeModal');
+            if (badgeModalEl && typeof bootstrap !== 'undefined') {
+                const m = bootstrap.Modal.getOrCreateInstance(badgeModalEl);
+                try { m.show(); } catch (e) { console.warn('Unable to show badgeModal', e); }
+            } else if (typeof window.showAdminBadgeModal === 'function') {
+                try { window.showAdminBadgeModal(); } catch (e) { console.warn('fallback showAdminBadgeModal failed', e); }
+            } else {
+                console.warn('badgeModal not found or bootstrap missing');
+            }
         });
     }
 
@@ -1695,8 +1701,15 @@ function resetPassword() {
             html: `Un nouveau mot de passe a été envoyé à <strong>${PROFILE_CONFIG.employeName}</strong>`,
             confirmButtonText: 'OK'
         }).then(() => {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal'));
-            modal.hide();
+            const resetEl = document.getElementById('resetPasswordModal');
+            if (resetEl && typeof bootstrap !== 'undefined') {
+                const inst = bootstrap.Modal.getInstance(resetEl);
+                if (inst && typeof inst.hide === 'function') {
+                    try { inst.hide(); } catch (e) { console.warn('Unable to hide resetPasswordModal', e); }
+                }
+            } else {
+                console.warn('resetPasswordModal not found or bootstrap missing');
+            }
             form.reset();
         });
     }, 2000);

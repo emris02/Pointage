@@ -1,6 +1,5 @@
 <?php
- //
-require 'db.php';
+require_once 'src/config/bootstrap.php';
 
 // Vérification des autorisations
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
@@ -10,11 +9,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
 
 // Vérifier si l'ID est présent
 if (!isset($_GET['id'])) {
-    header('Location: admin_dashboard.php');
+    header('Location: admin_dashboard_unifie.php');
     exit();
 }
 
-$admin_id = $_GET['id'];
+$admin_id = (int)$_GET['id'];
 
 // Récupérer les informations actuelles de l'admin
 $stmt = $pdo->prepare("SELECT * FROM admins WHERE id = ?");
@@ -22,7 +21,7 @@ $stmt->execute([$admin_id]);
 $admin = $stmt->fetch();
 
 if (!$admin) {
-    header('Location: admin_dashboard.php');
+    header('Location: admin_dashboard_unifie.php');
     exit();
 }
 
@@ -33,27 +32,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Nettoyage des données
     $formData = [
         'id' => $admin_id,
-        'nom' => htmlspecialchars(trim($_POST['nom'])),
-        'prenom' => htmlspecialchars(trim($_POST['prenom'])),
-        'email' => filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL),
-        'telephone' => preg_replace('/[^0-9]/', '', $_POST['telephone']),
-        'role' => $_POST['role']
+        'nom' => htmlspecialchars(trim($_POST['nom'] ?? '')),
+        'prenom' => htmlspecialchars(trim($_POST['prenom'] ?? '')),
+        'email' => filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL),
+        'telephone' => preg_replace('/[^0-9]/', '', $_POST['telephone'] ?? ''),
+        'role' => $_POST['role'] ?? $admin['role']
     ];
 
     // Validation
     $errors = [];
-    
     if (empty($formData['nom'])) $errors[] = "Le nom est requis";
     if (empty($formData['prenom'])) $errors[] = "Le prénom est requis";
     if (!filter_var($formData['email'], FILTER_VALIDATE_EMAIL)) $errors[] = "Email invalide";
-    if (strlen($formData['telephone']) < 8) $errors[] = "Numéro de téléphone invalide";
 
     if (empty($errors)) {
         // Mise à jour dans la base de données
         $stmt = $pdo->prepare("UPDATE admins SET 
             nom = ?, prenom = ?, email = ?, telephone = ?, role = ?
             WHERE id = ?");
-            
+        
         $success = $stmt->execute([
             $formData['nom'],
             $formData['prenom'],
@@ -64,59 +61,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ]);
 
         if ($success) {
-            $message = '<div class="alert alert-success">Administrateur modifié avec succès!</div>';
+            $message = '<div class="alert alert-success">Administrateur mis à jour avec succès.</div>';
             // Recharger les données
             $stmt = $pdo->prepare("SELECT * FROM admins WHERE id = ?");
             $stmt->execute([$admin_id]);
             $admin = $stmt->fetch();
         } else {
-            $message = '<div class="alert alert-danger">Erreur lors de la modification.</div>';
+            $message = '<div class="alert alert-danger">Erreur lors de la mise à jour.</div>';
         }
     } else {
         $message = '<div class="alert alert-danger">'.implode('<br>', $errors).'</div>';
     }
 }
+
+$pageTitle = 'Modifier Administrateur';
+$additionalCSS = ['assets/css/profil.css'];
+include 'partials/header.php';
+include 'src/views/partials/sidebar_canonique.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modifier Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .avatar-preview {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #ddd;
-            background-color: #f8f9fa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
+<main class="main-content py-4">
+    <div class="container-fluid px-3 px-md-4">
+        <div class="form-centered-wrapper">
+            <div class="form-card-container">
                 <div class="card shadow">
-                    <div class="card-header bg-success text-white">
-                        <h3 class="mb-0"><i class="fas fa-user-cog me-2"></i>Modifier Administrateur</h3>
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0"><i class="fas fa-user-cog me-2"></i>Modifier Administrateur</h5>
+                            <small class="text-white-50">ID: <?= htmlspecialchars($admin_id) ?></small>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-light" id="openDeleteModalBtn" data-admin-id="<?= $admin_id ?>">
+                                <i class="fas fa-trash me-1"></i>Supprimer
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <?= $message ?>
-                        <form action="" method="POST">
+                        <form action="" method="POST" autocomplete="off">
                             <div class="text-center mb-4">
-                                <div class="avatar-preview bg-primary mx-auto">
-                                    <?= strtoupper(substr($admin['prenom'], 0, 1)) . strtoupper(substr($admin['nom'], 0, 1)) ?>
+                                <div class="avatar-preview bg-primary mx-auto" style="width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.5rem;">
+                                    <?= strtoupper(substr($admin['prenom'], 0, 1) . substr($admin['nom'], 0, 1)) ?>
                                 </div>
                             </div>
                             
@@ -153,11 +138,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 </select>
                             </div>
                             
-                            <div class="d-grid gap-2 mt-4">
-                                <button type="submit" class="btn btn-success">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save me-2"></i>Enregistrer
                                 </button>
-                                <a href="admin_dashboard.php" class="btn btn-outline-secondary">
+                                <a href="admin_dashboard_unifie.php#admins" class="btn btn-outline-secondary">
                                     <i class="fas fa-times me-2"></i>Annuler
                                 </a>
                             </div>
@@ -167,22 +152,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </div>
     </div>
+</main>
 
-    <script>
-        // Formatage automatique du téléphone
-        document.getElementById('telephone').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 2) {
-                value = value.substring(0, 2) + ' ' + value.substring(2);
-            }
-            if (value.length > 5) {
-                value = value.substring(0, 5) + ' ' + value.substring(5);
-            }
-            if (value.length > 8) {
-                value = value.substring(0, 8) + ' ' + value.substring(8);
-            }
-            e.target.value = value;
-        });
-    </script>
-</body>
-</html>
+<!-- Delete confirmation modal (posts to supprimer_admin_def.php) -->
+<div class="modal fade" id="deleteAdminModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Supprimer l'administrateur</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <p>Cette action est irréversible. Pour confirmer, tapez <strong>SUPPRIMER</strong> ci-dessous.</p>
+        <form id="deleteAdminForm" method="POST" action="supprimer_admin_def.php">
+            <input type="hidden" name="admin_id" id="deleteAdminId" value="">
+            <div class="mb-3">
+                <input type="text" name="confirm_text" id="deleteConfirmText" class="form-control" placeholder="Tapez SUPPRIMER" required pattern="^SUPPRIMER$">
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" form="deleteAdminForm" class="btn btn-danger">Supprimer définitivement</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<?php include 'partials/footer.php'; ?>
+
+<script>
+document.getElementById('openDeleteModalBtn').addEventListener('click', function(e){
+    const id = this.getAttribute('data-admin-id');
+    document.getElementById('deleteAdminId').value = id;
+    const modal = new bootstrap.Modal(document.getElementById('deleteAdminModal'));
+    modal.show();
+});
+
+// Formatage automatique du téléphone
+const telInput = document.getElementById('telephone');
+if (telInput) {
+    telInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 2) value = value.substring(0, 2) + ' ' + value.substring(2);
+        if (value.length > 5) value = value.substring(0, 5) + ' ' + value.substring(5);
+        if (value.length > 8) value = value.substring(0, 8) + ' ' + value.substring(8);
+        e.target.value = value;
+    });
+}
+</script>

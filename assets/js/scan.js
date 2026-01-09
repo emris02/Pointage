@@ -969,6 +969,15 @@ class AdvancedBadgeScanner {
     
     showJustificationModal(badgeData, scanResult, required = false) {
         const modalEl = document.getElementById('justificationModal');
+        if (!modalEl) {
+            // If a lightweight helper exists, use it to create/show the modal
+            if (typeof window.openJustification === 'function') {
+                try { window.openJustification(scanResult?.data || badgeData); } catch (e) { console.warn('openJustification failed', e); }
+                return;
+            }
+            console.warn('showJustificationModal: #justificationModal not found, skipping modal show.');
+            return;
+        }
         const modal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
         const form = document.getElementById('justificationForm');
         if (form) form.dataset.required = required ? 'true' : 'false';
@@ -1069,8 +1078,14 @@ class AdvancedBadgeScanner {
             if (result.success) {
                 this.showFeedback('Justification enregistrée avec succès', 'success');
                 
-                // Fermeture du modal
-                bootstrap.Modal.getInstance(document.getElementById('justificationModal')).hide();
+                // Fermeture du modal (guardé)
+                const justEl = document.getElementById('justificationModal');
+                if (justEl) {
+                    const inst = bootstrap.Modal.getInstance(justEl) || null;
+                    if (inst && typeof inst.hide === 'function') {
+                        try { inst.hide(); } catch (e) { console.warn('Unable to hide justification modal', e); }
+                    }
+                }
                 
                 // Rafraîchir les données
                 await this.loadPointagesJour();

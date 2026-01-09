@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../../../src/config/bootstrap.php';
 // À adapter selon ta table de rapports/statistiques
 $rapports = $pdo->query("SELECT titre, date_rapport, resume FROM rapports ORDER BY date_rapport DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
 ?>

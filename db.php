@@ -24,6 +24,27 @@ try {
     error_log("[" . date('Y-m-d H:i:s') . "] Erreur BDD: " . $e->getMessage());
     // Ne PAS exposer le détail en prod
     http_response_code(503);
-    echo json_encode(['status' => 'error', 'message' => 'Service indisponible']);
+
+    // Decide response format: JSON for API/AJAX callers, simple HTML for browser pages
+    $isJson = false;
+    if (php_sapi_name() !== 'cli') {
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $xhr = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        if (stripos($accept, 'application/json') !== false || $xhr) {
+            $isJson = true;
+        }
+    }
+
+    if ($isJson) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['status' => 'error', 'message' => 'Service indisponible']);
+    } else {
+        // Minimal friendly HTML page so included views render a user-facing message
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<!doctype html><html><head><meta charset="utf-8"><title>Service indisponible</title>';
+        echo '<meta name="viewport" content="width=device-width,initial-scale=1">';
+        echo '<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f8f9fa;color:#212529;padding:40px} .card{max-width:720px;margin:32px auto;padding:24px;border-radius:8px;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.06)}</style>';
+        echo '</head><body><div class="card"><h1>Service indisponible</h1><p>Impossible de se connecter à la base de données. Veuillez réessayer plus tard ou contacter l\'administrateur.</p></div></body></html>';
+    }
     exit;
 }

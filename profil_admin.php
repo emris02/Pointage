@@ -115,62 +115,98 @@ include 'src/views/partials/sidebar_canonique.php';
 
 <div class="main-container">
 
-    <!-- ================= EN-TÊTE PRINCIPAL (aligned with profil_employe.php) ================= -->
-    <header class="profile-header">
-        <div class="admin-profile-header-inner card border-0 shadow-sm bg-gradient-primary">
-            <div class="card-body p-4">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                    <div>
-                        <h1 class="h3 fw-bold mb-2 d-flex align-items-center text-white">
-                            <i class="fas fa-user-shield me-2"></i>
-                            Profil Administrateur
-                        </h1>
-
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb mb-0 text-white-75">
-                                <li class="breadcrumb-item">
-                                    <a href="admin_dashboard_unifie.php" class="text-white text-decoration-none">
-                                        <i class="fas fa-home me-1"></i> Tableau de Bord
-                                    </a>
-                                </li>
-                                <li class="breadcrumb-item">
-                                    <a href="admin_dashboard_unifie.php#admins" class="text-white text-decoration-none">
-                                        <i class="fas fa-users-cog me-1"></i> Administrateurs
-                                    </a>
-                                </li>
-                                <li class="breadcrumb-item active text-white" aria-current="page">
-                                    <i class="fas fa-user-circle me-1"></i>
-                                    <?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?>
-                                </li>
-                            </ol>
-                        </nav>
-                    </div>
-
-                    <div class="btn-group">
-                        <a href="admin_dashboard_unifie.php#admins" class="btn btn-light">
-                            <i class="fas fa-arrow-left me-1"></i> Retour
-                        </a>
-
-                        <?php if ($is_editing_own || $is_super_admin): ?>
-                        <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                            <i class="fas fa-edit me-1"></i> Modifier
-                        </button>
-                        <?php endif; ?>
-                        
-                        <!-- Bouton pour afficher le badge -->
-                        <button class="btn btn-outline-light" id="showBadgeBtn" data-bs-toggle="modal" data-bs-target="#badgeModal" data-badge-type="admin-full">
-                            <i class="fas fa-id-card me-1"></i> Badge
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    </header>
-
     <main class="main-content py-4">
         <div class="container-fluid px-3 px-md-4">
+          <!-- ================= PROFILE HEADER ================= -->
+                <header class="profile-header">
+                    <div class="profile-info d-flex align-items-center justify-content-between flex-column flex-md-row">
+                        
+                        <!-- ===== AVATAR ===== -->
+                        <div class="profile-avatar-wrapper position-relative mb-4 mb-md-0">
+                            <?php
+                            if (!empty($admin['photo'])) {
+                                if (strpos($admin['photo'], 'uploads/') !== false) {
+                                    $avatarSrc = dirname($_SERVER['SCRIPT_NAME']) . '/image.php?f=' . urlencode(basename($admin['photo']));
+                                } else {
+                                    $avatarSrc = $admin['photo'];
+                                }
+                            } else {
+                                $avatarSrc = 'assets/img/profil.jpg';
+                            }
+                            ?>
+
+                            <img src="<?= htmlspecialchars($avatarSrc) ?>"
+                                alt="<?= htmlspecialchars($admin['prenom'] ?? 'Employé') ?>"
+                                class="profile-avatar rounded-circle shadow-lg"
+                                onerror="this.src='assets/img/profil.jpg'">
+
+                            <?php
+                            $statusClass = ($admin['status'] ?? '') === 'active'
+                                ? 'status-online'
+                                : 'status-offline';
+                            ?>
+                            <span class="avatar-status <?= $statusClass ?> border-white border-2"></span>
+
+                            <?php if (empty($admin['photo'])): ?>
+                                <div class="avatar-initials rounded-circle <?= $departementConfig['bg'] ?? 'bg-secondary' ?> d-flex align-items-center justify-content-center shadow">
+                                    <?= $initiale ?? 'X' ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- ===== INFOS PROFIL ===== -->
+                        <div class="profile-details ms-0 ms-md-4 text-center text-md-start flex-grow-1">
+                            <h1 class="profile-name fw-bold mb-2">
+                                <?= htmlspecialchars(($isAdmin['prenom'] ?? '') . ' ' . ($isAdmin['nom'] ?? '')) ?>
+                            </h1>
+
+                            <p class="profile-title fs-5 text-muted mb-2">
+                                <i class="fas fa-briefcase me-2"></i>
+                                <?= htmlspecialchars($admin['poste'] ?? 'Non défini') ?>
+                            </p>
+
+                            <div class="profile-department badge <?= $departementConfig['text'] ?? 'text-muted bg-light' ?> px-3 py-2 fs-6">
+                                <i class="fas fa-building me-2"></i>
+                                <?= htmlspecialchars($departementLabel ?? 'Département inconnu') ?>
+                            </div>
+
+                            <div class="profile-meta mt-3 d-flex flex-column flex-sm-row justify-content-center justify-content-md-start gap-2 gap-sm-3">
+                                <span class="meta-item badge bg-light text-dark px-3 py-2">
+                                    <i class="fas fa-hashtag me-1"></i>
+                                    Matricule : XPERT-<?= strtoupper(substr($isAdmin['departement'] ?? 'XXX', 0, 3)) ?><?= $isAdmin['id'] ?? '0' ?>
+                                </span>
+
+                                <span class="meta-item badge bg-light text-dark px-3 py-2">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    Ancienneté : <?= $anciennete ?? 'N/A' ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- ===== ACTIONS ===== -->
+                        <div class="profile-actions mt-4 mt-md-0 ms-auto d-flex align-items-center gap-2 flex-wrap justify-content-center">
+                            <!-- TOGGLE COLLAPSE -->
+                            <button class="btn btn-light profile-toggle rounded-circle"
+                                    id="toggleProfileHeader"
+                                    type="button"
+                                    title="Réduire / Déployer">
+                                <i class="fas fa-chevron-up"></i>
+                            </button>
+
+                            <!-- RETOUR -->
+                            <a href="<?= $isAdmin ? 'admin_dashboard_unifie.php' : 'employe_dashboard.php' ?>"
+                            class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> <span class="d-none d-md-inline">Retour</span>
+                            </a>
+
+                            <!-- CONTACT -->
+                            <a href="mailto:<?= htmlspecialchars($isAdmin['email'] ?? '') ?>"
+                            class="btn btn-primary">
+                                <i class="fas fa-envelope me-1"></i> <span class="d-none d-md-inline">Contacter</span>
+                            </a>
+                        </div>
+                    </div>
+                </header>
 
     <!-- ================= ALERTES ================= -->
     <?php if (isset($_GET['success'])): ?>
@@ -232,13 +268,15 @@ include 'src/views/partials/sidebar_canonique.php';
                     <div class="text-center mb-4">
                         <div class="position-relative d-inline-block mb-3">
                             <?php 
-                            $initials = strtoupper(substr($admin['prenom'], 0, 1) . substr($admin['nom'], 0, 1));
+                            $prenom_safe = $admin['prenom'] ?? '';
+                            $nom_safe = $admin['nom'] ?? '';
+                            $initials = strtoupper((substr($prenom_safe, 0, 1) ?: '') . (substr($nom_safe, 0, 1) ?: ''));
                             ?>
                             <div class="admin-avatar-initials avatar-xl rounded-circle <?= $admin['role'] === ROLE_SUPER_ADMIN ? 'bg-gradient-super-admin' : 'bg-gradient-admin' ?> text-white d-flex align-items-center justify-content-center shadow-lg position-relative">
                                 <?= $initials ?>
                             </div>
                             <!-- Indicateur de statut -->
-                            <div class="avatar-status <?= $admin['statut'] === 'actif' ? 'status-online' : 'status-offline' ?> position-absolute bottom-0 end-0 border border-3 border-white shadow-sm"></div>
+                            <div class="avatar-status <?= (($admin['statut'] ?? '') === 'actif') ? 'status-online' : 'status-offline' ?> position-absolute bottom-0 end-0 border border-3 border-white shadow-sm"></div>
                         </div>
                         
                         <h4 class="fw-bold mb-2"><?= htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']) ?></h4>
@@ -268,13 +306,13 @@ include 'src/views/partials/sidebar_canonique.php';
                         <div class="admin-badges-small d-flex flex-wrap justify-content-center gap-2">
                             <?php
                             // Déterminer la couleur du badge statut
-                            $statut_color = ($admin['statut'] === 'actif') ? 'success' : (($admin['statut'] === 'inactif') ? 'danger' : 'secondary');
+                            $statut_color = (($admin['statut'] ?? '') === 'actif') ? 'success' : ((($admin['statut'] ?? '') === 'inactif') ? 'danger' : 'secondary');
                             ?>
                             <span class="badge bg-<?= $statut_color ?>-subtle text-<?= $statut_color ?> border-0 badge-hover" 
                                   data-bs-toggle="modal" 
                                   data-bs-target="#badgeModal"
-                                  data-badge-type="<?= $admin['statut'] === 'actif' ? 'active' : 'inactive' ?>">
-                                <i class="fas fa-check-circle me-1"></i> <?= ucfirst($admin['statut']) ?>
+                                  data-badge-type="<?= (($admin['statut'] ?? '') === 'actif') ? 'active' : 'inactive' ?>">
+                                <i class="fas fa-check-circle me-1"></i> <?= htmlspecialchars(!empty($admin['statut']) ? ucfirst($admin['statut']) : '—') ?>
                             </span>
                             <span class="badge bg-info-subtle text-info border-0 badge-hover"
                                   data-bs-toggle="modal" 
@@ -423,23 +461,23 @@ include 'src/views/partials/sidebar_canonique.php';
                         
                         <div class="info-item d-flex align-items-center justify-content-between p-3 rounded-3 bg-light-subtle border mb-3">
                             <div class="d-flex align-items-center">
-                                <div class="info-icon <?= $admin['statut'] === 'actif' ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' ?> rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
+                                <div class="info-icon <?= (($admin['statut'] ?? '') === 'actif') ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' ?> rounded-2 d-flex align-items-center justify-content-center me-3 size-40">
                                     <i class="fas fa-circle"></i>
                                 </div>
                                 <div>
                                     <div class="info-label text-muted small mb-1">Statut du compte</div>
                                     <div class="info-value">
-                                        <span id="admin-statut" class="badge <?= $admin['statut'] === 'actif' ? 'bg-success' : 'bg-secondary' ?> text-white px-3 py-2 border-0 badge-clickable" 
-                                              data-bs-toggle="modal" 
-                                              data-bs-target="#badgeModal"
-                                              data-badge-type="<?= $admin['statut'] === 'actif' ? 'active' : 'inactive' ?>">
-                                            <i class="fas fa-<?= $admin['statut'] === 'actif' ? 'check' : 'times' ?>-circle me-1"></i>
-                                            <?= htmlspecialchars(ucfirst($admin['statut'])) ?>
+                                                                                                <span id="admin-statut" class="badge <?= (($admin['statut'] ?? '') === 'actif') ? 'bg-success' : 'bg-secondary' ?> text-white px-3 py-2 border-0 badge-clickable" 
+                                                                                            data-bs-toggle="modal" 
+                                                                                            data-bs-target="#badgeModal"
+                                                                                            data-badge-type="<?= (($admin['statut'] ?? '') === 'actif') ? 'active' : 'inactive' ?>">
+                                            <i class="fas fa-<?= (($admin['statut'] ?? '') === 'actif') ? 'check' : 'times' ?>-circle me-1"></i>
+                                            <?= htmlspecialchars(!empty($admin['statut']) ? ucfirst($admin['statut']) : '—') ?>
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="status-indicator <?= $admin['statut'] === 'actif' ? 'indicator-active' : 'indicator-inactive' ?>"></div>
+                            <div class="status-indicator <?= (($admin['statut'] ?? '') === 'actif') ? 'indicator-active' : 'indicator-inactive' ?>"></div>
                         </div>
                         
                         <div class="info-item d-flex align-items-center p-3 rounded-3 bg-light-subtle border mb-3">
@@ -503,11 +541,9 @@ include 'src/views/partials/sidebar_canonique.php';
                 </div>
                 <div class="card-body">
                     <div class="quick-actions d-flex flex-column gap-2">
-                        <button class="btn btn-primary w-100 py-2 shadow-sm transition-all" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#editProfileModal">
+                        <a href="modifier_admin.php?id=<?= (int)$admin['id'] ?>" class="btn btn-primary w-100 py-2 shadow-sm transition-all">
                             <i class="fas fa-edit me-2"></i> Modifier profil
-                        </button>
+                        </a>
                         
                         <button class="btn btn-warning w-100 py-2 shadow-sm transition-all" 
                                 data-bs-toggle="modal" 
@@ -535,7 +571,7 @@ include 'src/views/partials/sidebar_canonique.php';
                         </button>
 
                         <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
-                            <?php if ($admin['statut'] === 'actif'): ?>
+                            <?php if (($admin['statut'] ?? '') === 'actif'): ?>
                                 <button class="btn btn-outline-danger w-100 py-2 shadow-sm transition-all" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#deleteModal">
@@ -656,9 +692,9 @@ include 'src/views/partials/sidebar_canonique.php';
                         <div class="col-lg-8">
                             <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-end">
                                 <div class="btn-group" role="group">
-                                    <button class="btn btn-light px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                                    <a href="modifier_admin.php?id=<?= (int)$admin['id'] ?>" class="btn btn-light px-4 py-2 shadow-sm">
                                         <i class="fas fa-edit me-2"></i> Modifier profil
-                                    </button>
+                                    </a>
                                     <button class="btn btn-light dropdown-toggle dropdown-toggle-split px-3 shadow-sm" 
                                             type="button" 
                                             data-bs-toggle="dropdown">
@@ -687,7 +723,7 @@ include 'src/views/partials/sidebar_canonique.php';
                                 </button>
 
                                 <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
-                                    <?php if ($admin['statut'] === 'actif'): ?>
+                                    <?php if (($admin['statut'] ?? '') === 'actif'): ?>
                                         <button class="btn btn-warning px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
                                             <i class="fas fa-user-slash me-2"></i> Désactiver
                                         </button>
@@ -1404,7 +1440,7 @@ const ADMIN_PROFILE = {
     adminName: "<?= addslashes($admin['prenom'] . ' ' . $admin['nom']) ?>",
     adminRole: "<?= $admin['role'] ?>",
     adminId: <?= (int)$admin['id'] ?>,
-    adminStatut: "<?= $admin['statut'] ?>"
+    adminStatut: "<?= addslashes($admin['statut'] ?? '') ?>"
 };
 
 // Données des badges
@@ -2124,7 +2160,7 @@ document.addEventListener('submit', function(e) {
 /* ============================
    STRUCTURE PRINCIPALE
    ============================ */
-.admin-profile-container {
+.profile-container {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
     color: #2d3748;
@@ -2137,7 +2173,7 @@ document.addEventListener('submit', function(e) {
     overflow-x: hidden;
 }
 
-.admin-profile-container::before {
+.profile-container::before {
     content: '';
     position: fixed;
     top: 0;
@@ -2152,7 +2188,7 @@ document.addEventListener('submit', function(e) {
 /* ============================
    HEADER & EN-TÊTE
    ============================ */
-.admin-profile-header {
+.profile-header {
     margin-bottom: 2.5rem;
     animation: slideDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }

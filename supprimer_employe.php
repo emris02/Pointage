@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php'; // Connexion à la base de données
+require_once 'src/config/bootstrap.php'; // Connexion via bootstrap
 
 // Vérifier si l'ID de l'employé est bien reçu
 if (isset($_GET['id']) && !empty($_GET['id'])) {

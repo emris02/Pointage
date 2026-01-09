@@ -1,5 +1,5 @@
 <?php
-require 'db.php'; // Inclure votre fichier de connexion à la base de données
+require_once 'src/config/bootstrap.php'; // Inclure bootstrap qui charge la DB
 
 // Vérifier si la requête est une requête POST et si des données JSON ont été envoyées
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['CONTENT_TYPE']) && $_SERVER['CONTENT_TYPE'] === 'application/json') {

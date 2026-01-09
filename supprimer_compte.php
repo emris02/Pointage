@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php'; // Connexion à la base
+require_once 'src/config/bootstrap.php'; // Connexion via bootstrap
 
 // Vérifier si l'employé est connecté
 if (!isset($_SESSION['employe_id'])) {

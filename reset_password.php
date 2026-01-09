@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once 'src/config/bootstrap.php';
  //
 
 $message = '';

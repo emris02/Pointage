@@ -391,10 +391,11 @@ window.addEventListener('resize', function() {
 
 // Gestion des erreurs non capturées
 window.addEventListener('error', function(e) {
-    console.error('Erreur JavaScript non capturée:', e.error);
-    
-    // Afficher un message à l'utilisateur en production
-    if (window.location.hostname !== 'localhost') {
+    const err = e.error || e.message || null;
+    console.error('Erreur JavaScript non capturée:', err, { file: e.filename, line: e.lineno, col: e.colno });
+
+    // Afficher un message à l'utilisateur en production (si erreur utile)
+    if (err && window.location.hostname !== 'localhost') {
         App.showToast('Une erreur technique est survenue. Veuillez rafraîchir la page.', 'error');
     }
 });

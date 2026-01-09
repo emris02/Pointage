@@ -162,14 +162,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 $pageTitle = 'Ajouter un Employé';
-$additionalCSS = ['assets/css/admin.css'];
+$additionalCSS = ['assets/css/admin.css', 'assets/css/profil.css'];
 ?>
 
 <?php include 'partials/header.php'; ?>
 <?php include 'src/views/partials/sidebar_canonique.php'; ?>
 
-<div class="main-content" style="margin-left: 206px;padding: 10px;width: calc(100% - 170px);">
-    <div class="container mt-4 mx-auto" style="max-width: 1400px;">
+<main class="main-content py-4">
+    <div class="container-fluid px-3 px-md-4">
+        <div class="form-centered-wrapper">
+            <div class="form-card-container">
         <!-- Header -->
         <div class="row mb-4">
             <div class="col-12">
@@ -413,8 +415,10 @@ $additionalCSS = ['assets/css/admin.css'];
                 </div>
             </div>
         </div>
+            </div>
+        </div>
     </div>
-</div>
+</main>
 
 <script>
 function generatePassword() {

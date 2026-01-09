@@ -273,12 +273,15 @@ function traiterDecisionRapide($demande_id, $decision, $adminId, $motif = '') {
 $pageHeader = 'Gestion des demandes';
 $pageDescription = $demande ? ('Demande #' . $demande['id'] . ' - ' . ucfirst($demande['type'])) : 'Détail de la demande';
 
+$pageTitle = $pageHeader . ' | Pointage';
+$additionalCSS = ['assets/css/profil.css'];
+
 include __DIR__ . '/src/views/partials/header.php';
 include __DIR__ . '/src/views/partials/sidebar_canonique.php';
 ?>
 
-<div class="main-content">
-    <div class="container-fluid mt-4">
+<main class="main-content py-4">
+    <div class="container-fluid px-3 px-md-4 mt-4">
         <!-- Messages de notification -->
         <?php include __DIR__ . '/src/views/partials/alerts.php'; ?>
 
@@ -1060,7 +1063,7 @@ include __DIR__ . '/src/views/partials/sidebar_canonique.php';
             </div>
         </div>
     </div>
-</div>
+</main>
 
 <!-- Modals -->
 <?php if ($demande): ?>

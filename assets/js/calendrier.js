@@ -352,7 +352,13 @@ document.getElementById('eventForm')?.addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+            const evModalEl = document.getElementById('eventModal');
+            if (evModalEl && typeof bootstrap !== 'undefined') {
+                const evInst = bootstrap.Modal.getInstance(evModalEl);
+                if (evInst && typeof evInst.hide === 'function') {
+                    try { evInst.hide(); } catch (e) { console.warn('Unable to hide eventModal', e); }
+                }
+            }
             showNotification(data.message, 'success');
             window.calendarInstance.refetchEvents();
         } else {
@@ -393,7 +399,13 @@ function deleteEvent(eventId) {
                 if (data.success) {
                     showNotification(data.message, 'success');
                     window.calendarInstance.refetchEvents();
-                    bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+                    const el = document.getElementById('eventModal');
+                    if (el && typeof bootstrap !== 'undefined') {
+                        const inst = bootstrap.Modal.getInstance(el);
+                        if (inst && typeof inst.hide === 'function') {
+                            try { inst.hide(); } catch (e) { console.warn('Unable to hide eventModal', e); }
+                        }
+                    }
                 } else {
                     showNotification(data.message, 'error');
                 }

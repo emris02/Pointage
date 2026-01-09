@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../../../src/config/bootstrap.php';
 $employes = $pdo->query('SELECT id, prenom, nom, poste, email, photo FROM employes')->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <table class="table table-hover">

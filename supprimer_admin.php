@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php'; // Connexion à la base de données
+require_once 'src/config/bootstrap.php'; // Connexion via bootstrap
 
 // Vérifier si un admin est connecté
 if (!isset($_SESSION['admin_id'])) {

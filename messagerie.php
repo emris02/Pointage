@@ -1,6 +1,6 @@
 <?php
  //
-require 'db.php';
+require_once 'src/config/bootstrap.php';
 
 // Auth check
 if (!isset($_SESSION['employe_id']) && !isset($_SESSION['admin_id'])) {
