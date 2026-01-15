@@ -739,8 +739,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     $retards = $pdo->query("
                         SELECT p.id, e.prenom, e.nom, p.date_heure, 
-                               TIMEDIFF(p.date_heure, CONCAT(DATE(p.date_heure), ' 09:00:00')) as retard,
-                               p.retard_cause, p.retard_justifie
+                               TIMESTAMPDIFF(MINUTE, CONCAT(DATE(p.date_heure), ' 09:00:00'), p.date_heure) as retard_minutes,
+                               (SELECT r.statut FROM retards r WHERE r.pointage_id = p.id ORDER BY r.date_soumission DESC LIMIT 1) as statut,
+                               (SELECT r.raison FROM retards r WHERE r.pointage_id = p.id ORDER BY r.date_soumission DESC LIMIT 1) as retard_raison
                         FROM pointages p
                         JOIN employes e ON p.employe_id = e.id
                         WHERE p.type = 'arrivee' 
@@ -770,8 +771,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <td><?= date('d/m/Y', strtotime($retard['date_heure'])) ?></td>
                                             <td><?= $minutes ?> minutes</td>
                                             <td>
-                                            <?php if ($retard['retard_justifie']): ?>
-                                                    <?= htmlspecialchars($retard['retard_cause']) ?>
+                                                <?php if ((!empty($retard['statut']) && $retard['statut'] === 'approuve') || !empty($retard['est_justifie'])): ?>
+                                                    <span class="badge bg-success"><?= htmlspecialchars($retard['retard_raison'] ?? 'Justifié') ?></span>
+                                                <?php elseif (!empty($retard['statut']) && $retard['statut'] === 'en_attente'): ?>
+                                                    <span class="badge bg-warning text-dark">En attente</span>
                                                 <?php else: ?>
                                                     <span class="badge bg-danger">Non justifié</span>
                                                 <?php endif; ?>

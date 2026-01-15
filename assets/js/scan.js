@@ -306,13 +306,14 @@ class AdvancedBadgeScanner {
         this.showFeedback('Badge détecté, traitement en cours...', 'info');
         this.updateCameraUI();
         
+        let badgeData = null; // scope it so catch can access
         try {
             console.log('QR Code détecté:', result.data);
             
             const rawToken = (result.data || '').trim();
             
             // Parsing des données du badge
-            let badgeData = this.parseBadgeData(rawToken);
+            badgeData = this.parseBadgeData(rawToken);
             
             if (!badgeData) {
                 badgeData = { 
@@ -337,7 +338,21 @@ class AdvancedBadgeScanner {
             
         } catch (error) {
             console.error('Erreur traitement badge:', error);
-            await this.handleScanError(error);
+            const code = error.code || (error.details && error.details.code) || null;
+            try {
+                if (code === 'NEEDS_CONFIRMATION' || (error.message && error.message.toLowerCase().includes('confirmation'))) {
+                    const details = error.details || {};
+                    await this.showConflictModal(badgeData, details);
+                } else if (code === 'NEED_JUSTIFICATION' || (error.details && error.details.code === 'NEED_JUSTIFICATION')) {
+                    const details = error.details || {};
+                    this.showJustificationModal(badgeData, details, true);
+                } else {
+                    await this.handleScanError(error);
+                }
+            } catch (modalErr) {
+                console.error('Erreur lors de l\'affichage du modal conflit:', modalErr);
+                await this.handleScanError(error);
+            }
         } finally {
             // Réactivation progressive
             const cooldown = this.calculateAdaptiveCooldown();
@@ -556,8 +571,9 @@ class AdvancedBadgeScanner {
                 // Try to extract a server-provided message/code
                 const errorMsg = result?.message || result?.error || `Erreur HTTP ${response.status}`;
                 const errorCode = result?.code || null;
-                // Provide more context in the UI rather than dumping raw stack traces
-                throw Object.assign(new Error(errorMsg), { code: errorCode });
+                // Provide details (server result) so error handler can access new_badge, details, etc.
+                const err = Object.assign(new Error(errorMsg), { code: errorCode, details: result || null });
+                throw err;
             }
             
             if (!result.success) {
@@ -758,7 +774,17 @@ class AdvancedBadgeScanner {
         // Affichage contextualisé selon le code d'erreur
         switch (error.code) {
             case 'POINTAGE_DUPLICATE':
-                overlayMsg = `${error.details.message}<br><button id='retry-btn' class='btn btn-sm btn-primary mt-2'>Réessayer</button>`;
+                // Afficher message et, si un nouveau badge a été régénéré, donner un raccourci pour le visualiser
+                const dupMsg = (error.details && error.details.message) ? error.details.message : error.message;
+                overlayMsg = `${dupMsg}`;
+                if (error.details && error.details.new_badge) {
+                    overlayMsg += `<br><div class="mt-2"><strong>Nouveau badge généré</strong> — valide jusqu'au ${this.formatDate(error.details.new_badge.expires_at || '')}</div>`;
+                    overlayMsg += `<div class="mt-2"><button id='show-new-badge' class='btn btn-sm btn-outline-primary'>Voir le nouveau badge</button></div>`;
+                } else if (error.details && error.details.badge_regen_error) {
+                    overlayMsg += `<br><small class='text-muted'>Régénération automatique échouée: ${error.details.badge_regen_error}</small>`;
+                } else {
+                    overlayMsg += `<br><button id='retry-btn' class='btn btn-sm btn-primary mt-2'>Réessayer</button>`;
+                }
                 overlayType = 'warning';
                 break;
             case 'EMPLOYE_NOT_FOUND':
@@ -802,6 +828,46 @@ class AdvancedBadgeScanner {
             if (helpBtn) {
                 helpBtn.onclick = () => {
                     window.open('mailto:support@pointage.local?subject=Badge non reconnu');
+                };
+            }
+
+            // Handler pour afficher le nouveau badge si présent
+            const showNewBtn = document.getElementById('show-new-badge');
+            if (showNewBtn && error.details && error.details.new_badge) {
+                showNewBtn.onclick = () => {
+                    // Ouvrir un modal simple montrant le token et la date d'expiration
+                    const nb = error.details.new_badge;
+                    const modalHtml = `
+                        <div class="modal fade" id="newBadgeModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Nouveau badge généré</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p><strong>Token:</strong> <code>${nb.token}</code></p>
+                                        <p><strong>Valide jusqu'au :</strong> ${this.formatDate(nb.expires_at||'')}</p>
+                                        <p class="text-muted small">Vous pouvez l'utiliser immédiatement pour le pointage.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button class="btn btn-primary" id="copy-new-badge">Copier le token</button>
+                                        <button class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    const div = document.createElement('div'); div.innerHTML = modalHtml; document.body.appendChild(div);
+                    const mEl = document.getElementById('newBadgeModal');
+                    const modal = new bootstrap.Modal(mEl);
+                    modal.show();
+                    document.getElementById('copy-new-badge').onclick = () => {
+                        navigator.clipboard.writeText(nb.token).then(()=>{
+                            this.showFeedback('Token copié dans le presse-papier', 'success');
+                        }).catch(()=>{ this.showFeedback('Impossible de copier', 'warning'); });
+                    };
+                    mEl.addEventListener('hidden.bs.modal', ()=>{ div.remove(); });
                 };
             }
         }, 100);
@@ -978,7 +1044,6 @@ class AdvancedBadgeScanner {
             console.warn('showJustificationModal: #justificationModal not found, skipping modal show.');
             return;
         }
-        const modal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
         const form = document.getElementById('justificationForm');
         if (form) form.dataset.required = required ? 'true' : 'false';
         
@@ -1009,13 +1074,39 @@ class AdvancedBadgeScanner {
             if (submitHidden) submitHidden.value = '';
         }
 
-        modal.show();
+        // Show modal using Bootstrap if available, otherwise use simple fallback
+        if (typeof bootstrap !== 'undefined' && bootstrap && typeof bootstrap.Modal === 'function') {
+            const modal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+            modal.show();
+        } else {
+            // Fallback display (simple centered show)
+            modalEl.classList.add('show', 'd-block');
+            modalEl.style.display = 'block';
+            modalEl.setAttribute('aria-modal', 'true');
+            modalEl.removeAttribute('aria-hidden');
+
+            // backdrop
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.id = 'fallback-backdrop-justif';
+            document.body.appendChild(backdrop);
+
+            const hideFallback = () => {
+                modalEl.classList.remove('show');
+                modalEl.classList.remove('d-block');
+                modalEl.style.display = 'none';
+                if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+            };
+
+            // wire close buttons
+            const closeButtons = modalEl.querySelectorAll('[data-bs-dismiss], .btn-close');
+            closeButtons.forEach(btn => btn.addEventListener('click', hideFallback));
+        }
         
         // Focus automatique
         setTimeout(() => {
             document.getElementById('justificationReason').focus();
-        }, 500);
-        // Remplir les informations supplémentaires si disponibles
+        }, 500);        // Remplir les informations supplémentaires si disponibles
         const emp = scanResult?.data?.employe || {};
         const addrEl = document.getElementById('justificationAddress');
         const deptEl = document.getElementById('justificationDepartment');
@@ -1038,8 +1129,229 @@ class AdvancedBadgeScanner {
             }
         }
     }
-    
-    
+
+    async showConflictModal(badgeData, details = {}) {
+        // Construire et afficher un modal de confirmation pour les conflits de pointage
+        const modalHtml = `
+            <div class="modal fade" id="conflictModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Pointage en conflit</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>${(details.message) ? this.escapeHtml(details.message) : 'Un pointage conflit a été détecté. Choisissez une action:'}</p>
+                            <div id="conflict-last-info" class="mb-2 small text-muted">${(details.last && details.last.type) ? `Dernier pointage: ${details.last.type} à ${details.last.heure || details.last.created_at || ''}` : ''}</div>
+                            <div id="conflict-actions" class="d-flex gap-2">
+                                <button class="btn btn-warning" id="conflict-pause">Pause</button>
+                                <button class="btn btn-primary" id="conflict-depart">Départ anticipé</button>
+                                <button class="btn btn-secondary" id="conflict-cancel">Annuler</button>
+                            </div>
+                            <div id="conflict-extra" class="mt-3"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <small class="text-muted me-auto">Actionner avec prudence — les enregistrements seront persistés.</small>
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const wrapper = document.createElement('div'); wrapper.innerHTML = modalHtml; document.body.appendChild(wrapper);
+        const mEl = document.getElementById('conflictModal');
+        if (typeof bootstrap !== 'undefined' && bootstrap && typeof bootstrap.Modal === 'function') {
+            const modal = new bootstrap.Modal(mEl, { backdrop: 'static', keyboard: false });
+            modal.show();
+        } else {
+            // Fallback show
+            mEl.classList.add('show','d-block');
+            mEl.style.display = 'block';
+            const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop fade show'; backdrop.id = 'fallback-backdrop-conflict'; document.body.appendChild(backdrop);
+            mEl.addEventListener('hidden.bs.modal', ()=>{ if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop); });
+        }
+
+        const clearAndClose = () => {
+            try {
+                if (typeof bootstrap !== 'undefined' && bootstrap && typeof bootstrap.Modal === 'function') {
+                    modal.hide();
+                } else {
+                    // fallback hide
+                    mEl.classList.remove('show','d-block');
+                    mEl.style.display = 'none';
+                    const back = document.getElementById('fallback-backdrop-conflict'); if (back && back.parentNode) back.parentNode.removeChild(back);
+                    wrapper.remove();
+                }
+            } catch(e){
+                try { wrapper.remove(); } catch(e){}
+            }
+            mEl.addEventListener('hidden.bs.modal', ()=>{ try { wrapper.remove(); } catch(e){} });
+        };
+
+        const pauseBtn = document.getElementById('conflict-pause');
+        const departBtn = document.getElementById('conflict-depart');
+        const cancelBtn = document.getElementById('conflict-cancel');
+        const extra = document.getElementById('conflict-extra');
+
+        const lastId = details.last?.pointage_id || details.last?.id || '';
+
+        pauseBtn.addEventListener('click', async () => {
+            // Demander la durée en minutes
+            const minutes = prompt('Durée de la pause en minutes (entier):', '15');
+            const mInt = minutes ? parseInt(minutes, 10) : NaN;
+            if (!mInt || mInt <= 0) {
+                this.showFeedback('Durée invalide ou annulée', 'warning');
+                return;
+            }
+
+            // Afficher indicateur
+            extra.innerHTML = `<div class="text-muted small">Enregistrement de la pause (${mInt} min)...</div>`;
+
+            try {
+                const id = badgeData.employe_id || badgeData.admin_id || badgeData.id || null;
+                const type = badgeData.employe_id ? 'employe' : (badgeData.admin_id ? 'admin' : 'employe');
+
+                const res = await fetch(this.apiEndpoints.scan.replace('scan_qr.php','do_pause_confirm.php'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ type, id, minutes: mInt, last_pointage_id: lastId })
+                });
+
+                let json;
+                try {
+                    json = await res.json();
+                } catch (parseErr) {
+                    const txt = await res.text();
+                    throw new Error(txt || `Erreur serveur (${res.status})`);
+                }
+
+                if (res.ok && json && json.status === 'success') {
+                    this.showFeedback(json.message || 'Pause enregistrée', 'success');
+                    clearAndClose();
+                    await this.loadPointagesJour();
+                } else {
+                    throw new Error(json.message || `Erreur serveur (${res.status})`);
+                }
+            } catch (err) {
+                console.error('Erreur en confirm pause:', err);
+                this.showCenteredAlert(`Erreur: ${this.escapeHtml(err.message)}`, 'error', 8000);
+                this.showFeedback(`Erreur: ${err.message}`, 'error');
+            }
+        });
+
+        departBtn.addEventListener('click', async () => {
+            const reason = prompt('Raison du départ anticipé (texte requis):', 'Départ anticipé');
+            if (!reason || !reason.trim()) {
+                this.showFeedback('Raison requise pour un départ anticipé', 'warning');
+                return;
+            }
+
+            extra.innerHTML = `<div class="text-muted small">Enregistrement du départ anticipé...</div>`;
+
+            try {
+                const id = badgeData.employe_id || badgeData.admin_id || badgeData.id || null;
+                const type = badgeData.employe_id ? 'employe' : (badgeData.admin_id ? 'admin' : 'employe');
+
+                const res = await fetch(this.apiEndpoints.scan.replace('scan_qr.php','do_depart_confirm.php'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ type, id, reason: reason.trim(), last_pointage_id: lastId })
+                });
+
+                let json;
+                try {
+                    json = await res.json();
+                } catch (parseErr) {
+                    const txt = await res.text();
+                    throw new Error(txt || `Erreur serveur (${res.status})`);
+                }
+
+                if (res.ok && json && json.status === 'success') {
+                    this.showFeedback(json.message || 'Départ enregistré', 'success');
+                    // If server returns new_badge, show it
+                    if (json.new_badge) {
+                        setTimeout(() => {
+                            try { this.showNewBadgeFromData(json.new_badge); } catch(e){}
+                        }, 500);
+                    }
+                    clearAndClose();
+                    await this.loadPointagesJour();
+                } else {
+                    throw new Error(json.message || `Erreur serveur (${res.status})`);
+                }
+            } catch (err) {
+                console.error('Erreur en confirm depart:', err);
+                this.showCenteredAlert(`Erreur: ${this.escapeHtml(err.message)}`, 'error', 8000);
+                this.showFeedback(`Erreur: ${err.message}`, 'error');
+            }
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            clearAndClose();
+        });
+
+        // If bootstrap is not available, ensure the modal manager doesn't throw elsewhere
+        if (typeof bootstrap === 'undefined') {
+            // Give a hint to the operator
+            this.showCenteredAlert('Bootstrap JS non chargé; modal affiché via fallback.', 'warning', 7000);
+        }
+
+        // Utilitaire pour l'affichage d'un nouveau badge généré
+        this.showNewBadgeFromData = (nb) => {
+            if (!nb) return;
+            const modalHtml = `
+                <div class="modal fade" id="newBadgeModal2" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Nouveau badge généré</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Token:</strong> <code>${nb.token}</code></p>
+                                <p><strong>Valide jusqu'au :</strong> ${this.formatDate(nb.expires_at||'')}</p>
+                                <p class="text-muted small">Vous pouvez l'utiliser immédiatement pour le pointage.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-primary" id="copy-new-badge-2">Copier le token</button>
+                                <button class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const d = document.createElement('div'); d.innerHTML = modalHtml; document.body.appendChild(d);
+            const el = document.getElementById('newBadgeModal2');
+            if (typeof bootstrap !== 'undefined' && bootstrap && typeof bootstrap.Modal === 'function') {
+                const m = new bootstrap.Modal(el); m.show();
+                el.addEventListener('hidden.bs.modal', ()=>{ d.remove(); });
+            } else {
+                // fallback: simple centered card + backdrop
+                const card = el.querySelector('.modal-dialog')?.cloneNode(true);
+                const overlay = document.createElement('div');
+                overlay.id = 'fallback-new-badge'; overlay.style.position = 'fixed'; overlay.style.top = 0; overlay.style.left = 0; overlay.style.right = 0; overlay.style.bottom = 0; overlay.style.background = 'rgba(0,0,0,0.4)'; overlay.style.zIndex = 20000; overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center';
+                const wrapper = document.createElement('div'); wrapper.className = 'fallback-modal'; wrapper.style.minWidth = '320px'; wrapper.style.maxWidth = '700px'; wrapper.style.background = '#fff'; wrapper.style.borderRadius = '12px'; wrapper.style.padding = '18px';
+                wrapper.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                        <strong>Nouveau badge généré</strong>
+                        <div style="margin-left:auto"><button class="btn btn-sm btn-secondary" id="fallback-close-new">Fermer</button></div>
+                    </div>
+                    <div><p><strong>Token:</strong> <code>${nb.token}</code></p>
+                    <p><strong>Valide jusqu'au :</strong> ${this.formatDate(nb.expires_at||'')}</p></div>
+                    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+                        <button class="btn btn-primary" id="copy-new-badge-2">Copier le token</button>
+                        <button class="btn btn-secondary" id="fallback-close-new-2">Fermer</button>
+                    </div>
+                `;
+                overlay.appendChild(wrapper); document.body.appendChild(overlay);
+                document.getElementById('copy-new-badge-2').onclick = () => { navigator.clipboard.writeText(nb.token).then(()=>{ this.showFeedback('Token copié', 'success'); }).catch(()=>{ this.showFeedback('Impossible de copier', 'warning'); }); };
+                document.getElementById('fallback-close-new').onclick = document.getElementById('fallback-close-new-2').onclick = () => { overlay.remove(); d.remove(); };
+            }
+        };
+
+    }
+
     async submitJustification() {
         const reason = document.getElementById('justificationReason').value;
         const details = document.getElementById('justificationDetails').value;
@@ -1068,8 +1380,14 @@ class AdvancedBadgeScanner {
         try {
             this.showFeedback('Envoi de la justification...', 'info');
             
+            const headers = {};
+            if (window.TERMINAL_API_KEY) headers['X-Terminal-Key'] = window.TERMINAL_API_KEY;
+            const terminalEl = document.getElementById('terminalApiKey');
+            if (terminalEl && terminalEl.value) headers['X-Terminal-Key'] = terminalEl.value;
+
             const response = await fetch(this.apiEndpoints.justifyDelay, {
                 method: 'POST',
+                headers: headers,
                 body: formData
             });
             
@@ -1141,6 +1459,11 @@ class AdvancedBadgeScanner {
         
         this.feedbackMessage.className = `feedback-message feedback-${type} animate__animated animate__fadeIn`;
         
+        // Also show a centered, colorized alert so errors/confirms are not only in console
+        if (type === 'error' || type === 'warning' || type === 'success') {
+            this.showCenteredAlert(message, type);
+        }
+
         // Auto-masquage
         const hideDelay = {
             info: 4000,
@@ -1182,7 +1505,101 @@ class AdvancedBadgeScanner {
             }, 1000);
         }
     }
-    
+
+    // Escaper du HTML pour éviter l'injection dans les modals
+    escapeHtml(str) {
+        if (!str && str !== 0) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    formatDate(sqlDate) {
+        if (!sqlDate) return '';
+        try {
+            const d = new Date(sqlDate);
+            if (isNaN(d.getTime())) return sqlDate;
+            return d.toLocaleString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return sqlDate; }
+    }
+
+    // Affiche une alerte modale centrée, colorée selon le type ('success','error','warning','info')
+    showCenteredAlert(message, type = 'info', autoHide = 5000) {
+        try {
+            const existing = document.getElementById('centered-alert-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'centered-alert-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.left = 0;
+            overlay.style.top = 0;
+            overlay.style.right = 0;
+            overlay.style.bottom = 0;
+            overlay.style.zIndex = 20000;
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.pointerEvents = 'none';
+
+            const card = document.createElement('div');
+            card.className = 'centered-alert-card animate__animated animate__fadeInDown';
+            card.style.minWidth = '320px';
+            card.style.maxWidth = '700px';
+            card.style.pointerEvents = 'auto';
+            card.style.borderRadius = '12px';
+            card.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+            card.style.padding = '18px 22px';
+            card.style.textAlign = 'center';
+            card.style.color = '#fff';
+            card.style.display = 'flex';
+            card.style.alignItems = 'center';
+            card.style.gap = '12px';
+
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-info-circle fa-lg';
+
+            switch(type) {
+                case 'success': card.style.background = '#198754'; icon.className = 'fas fa-check-circle fa-lg'; break;
+                case 'error': card.style.background = '#dc3545'; icon.className = 'fas fa-times-circle fa-lg'; break;
+                case 'warning': card.style.background = '#ffc107'; card.style.color = '#212529'; icon.className = 'fas fa-exclamation-triangle fa-lg'; break;
+                default: card.style.background = '#0d6efd'; icon.className = 'fas fa-info-circle fa-lg'; break;
+            }
+
+            const text = document.createElement('div');
+            text.innerHTML = message;
+            text.style.fontSize = '15px';
+            text.style.lineHeight = '1.3';
+            text.style.wordBreak = 'break-word';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn btn-sm btn-light';
+            closeBtn.style.marginLeft = '8px';
+            closeBtn.style.flexShrink = 0;
+            closeBtn.textContent = 'Fermer';
+            closeBtn.onclick = () => { overlay.remove(); };
+
+            card.appendChild(icon);
+            card.appendChild(text);
+            card.appendChild(closeBtn);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+
+            if (autoHide && autoHide > 0) {
+                setTimeout(() => {
+                    try { overlay.classList.add('animate__fadeOutUp'); } catch(e){}
+                    setTimeout(()=>{ overlay.remove(); }, 450);
+                }, autoHide);
+            }
+
+        } catch (e) {
+            console.error('Erreur showCenteredAlert:', e);
+        }
+    }
+
     shakeElement(element) {
         if (element) {
             element.classList.add('animate__animated', 'animate__shakeX');

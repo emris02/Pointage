@@ -184,9 +184,33 @@ include 'src/views/partials/sidebar_canonique.php';
 <script>
 document.getElementById('openDeleteModalBtn').addEventListener('click', function(e){
     const id = this.getAttribute('data-admin-id');
+    const deleteModalEl = document.getElementById('deleteAdminModal');
     document.getElementById('deleteAdminId').value = id;
-    const modal = new bootstrap.Modal(document.getElementById('deleteAdminModal'));
-    modal.show();
+
+    if (!deleteModalEl) return;
+
+    // Defensive bootstrap modal initialization with fallback
+    let deleteModal = null;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        try {
+            deleteModal = new bootstrap.Modal(deleteModalEl);
+        } catch (err) {
+            console.error('Bootstrap Modal init failed:', err);
+            // Simple fallback: show element by toggling classes
+            deleteModalEl.style.display = 'block';
+            deleteModalEl.classList.add('show');
+            deleteModal = deleteModalEl;
+        }
+    } else {
+        // No Bootstrap available - minimal fallback
+        deleteModalEl.style.display = 'block';
+        deleteModalEl.classList.add('show');
+        deleteModal = deleteModalEl;
+    }
+
+    if (deleteModal && typeof deleteModal.show === 'function') {
+        deleteModal.show();
+    }
 });
 
 // Formatage automatique du téléphone

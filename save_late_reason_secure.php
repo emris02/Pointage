@@ -44,7 +44,7 @@ try {
     }
 
     // Check if justification already exists / was applied
-    if (!empty($pointage['est_justifie']) || (isset($pointage['retard_justifie']) && $pointage['retard_justifie'] === 'oui')) {
+    if (!empty($pointage['est_justifie'])) {
         throw new Exception('Ce pointage a déjà une justification enregistrée');
     }
 
@@ -55,12 +55,23 @@ try {
         throw new Exception('Aucune justification requise pour ce pointage');
     }
 
-    // Persist justification by updating pointages (audit fields available)
-    $update = $pdo->prepare(
-        'UPDATE pointages SET est_justifie = 1, retard_justifie = ?, commentaire = ?, justifie_par = ?, date_justification = NOW(), type_justification = ? WHERE id = ?'
+    // Insert into `retards` (justification request) and mark pointage as having a justification pending
+    $stmtRetard = $pdo->prepare(
+        'INSERT INTO retards (pointage_id, employe_id, raison, details, statut, date_soumission, admin_traitant_id) VALUES (:pointage_id, :employe_id, :raison, :details, "en_attente", NOW(), :admin_id)'
     );
-    $retardJustifie = 'oui';
-    $update->execute([$retardJustifie, $reason . ( $comment ? "\n" . $comment : '' ), $justifiePar, $typeJustif, $pointageId]);
+
+    $stmtRetard->execute([
+        ':pointage_id' => $pointageId,
+        ':employe_id' => $pointage['employe_id'] ?? 0,
+        ':raison' => $reason,
+        ':details' => $comment,
+        ':admin_id' => $sessionAdminId ?? null
+    ]);
+
+    // Update pointage est_justifie flag and append comment
+    $append = ($comment ? "\n" . $comment : '');
+    $updatePoint = $pdo->prepare('UPDATE pointages SET est_justifie = 1, commentaire = CONCAT(COALESCE(commentaire, ""), :sep, :comment) WHERE id = :id');
+    $updatePoint->execute([':sep' => "\nJustification: ", ':comment' => $reason . $append, ':id' => $pointageId]);
 
     echo json_encode(['success' => true, 'message' => 'Justification enregistrée', 'pointage_id' => $pointageId]);
     exit;

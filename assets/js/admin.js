@@ -1,10 +1,9 @@
 // === Calendrier Admin (FullCalendar) ===
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialisation du calendrier
-  initCalendar();
-  
-  // Gestion des avatars avec fallback
-  initAvatarFallback();
+// Use load to ensure external libs (Bootstrap / FullCalendar) are available
+window.addEventListener('load', function() {
+  try { initCalendar(); } catch (e) { console.error('initCalendar error', e); }
+  try { initAvatarFallback(); } catch (e) { console.error('initAvatarFallback error', e); }
+  try { initBootstrapIfAvailable(); } catch (e) { console.error('initBootstrapIfAvailable error', e); }
 });
 
 // Initialisation du calendrier FullCalendar
@@ -20,13 +19,6 @@ function initCalendar() {
   const form = document.getElementById('eventForm');
   const deleteBtn = document.getElementById('deleteEventBtn');
 
-  if (!eventModalEl) {
-    console.error('Modal eventModal non trouvé');
-    return;
-  }
-
-  const eventModal = new bootstrap.Modal(eventModalEl);
-
   // Helper pour toggle spinner
   const setLoading = (state) => {
     if (loading) loading.style.display = state ? 'block' : 'none';
@@ -39,6 +31,54 @@ function initCalendar() {
       calendarEl.innerHTML = '<div class="alert alert-warning">Calendrier indisponible : FullCalendar non chargé.</div>';
     }
     return;
+  }
+
+  // Gestion du modal - avec fallback si Bootstrap n'est pas disponible
+  let eventModal = null;
+  if (eventModalEl) {
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      try {
+        eventModal = new bootstrap.Modal(eventModalEl);
+      } catch (err) {
+        console.error('Bootstrap Modal init failed:', err);
+        // Fallback modal sans Bootstrap
+        eventModal = {
+          show: function() {
+            eventModalEl.style.display = 'block';
+            eventModalEl.classList.add('show');
+          },
+          hide: function() {
+            eventModalEl.style.display = 'none';
+            eventModalEl.classList.remove('show');
+          }
+        };
+      }
+    } else {
+      // Fallback modal sans Bootstrap
+      eventModal = {
+        show: function() {
+          eventModalEl.style.display = 'block';
+          eventModalEl.classList.add('show');
+        },
+        hide: function() {
+          eventModalEl.style.display = 'none';
+          eventModalEl.classList.remove('show');
+        }
+      };
+      
+      // Ajouter des boutons de fermeture si manquants
+      const closeBtns = eventModalEl.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+      closeBtns.forEach(btn => {
+        btn.addEventListener('click', () => eventModal.hide());
+      });
+      
+      // Fermer en cliquant à l'extérieur
+      eventModalEl.addEventListener('click', (e) => {
+        if (e.target === eventModalEl) {
+          eventModal.hide();
+        }
+      });
+    }
   }
 
   // Initialisation FullCalendar
@@ -198,7 +238,11 @@ function initCalendar() {
         const result = await res.json();
         
         if (result.success) {
-          eventModal.hide();
+          if (eventModal && eventModal.hide) {
+            eventModal.hide();
+          } else if (eventModalEl) {
+            eventModalEl.style.display = 'none';
+          }
           calendar.refetchEvents();
           showToast(payload.action === 'create' ? 'Événement créé avec succès' : 'Événement modifié avec succès', 'success');
         } else {
@@ -239,7 +283,11 @@ function initCalendar() {
         const result = await res.json();
         
         if (result.success) {
-          eventModal.hide();
+          if (eventModal && eventModal.hide) {
+            eventModal.hide();
+          } else if (eventModalEl) {
+            eventModalEl.style.display = 'none';
+          }
           calendar.refetchEvents();
           showToast('Événement supprimé avec succès', 'success');
         } else {
@@ -256,7 +304,7 @@ function initCalendar() {
 
   // Fonction pour ouvrir le modal d'événement
   function openEventModal(event = null, dateStr = null) {
-    if (!form) return;
+    if (!form || !eventModal) return;
     
     form.reset();
     
@@ -293,7 +341,11 @@ function initCalendar() {
       if (modalLabel) modalLabel.innerText = 'Nouvel événement';
     }
     
-    eventModal.show();
+    if (eventModal && eventModal.show) {
+      eventModal.show();
+    } else if (eventModalEl) {
+      eventModalEl.style.display = 'block';
+    }
   }
 
   // Validation du formulaire d'événement
@@ -394,8 +446,9 @@ function initAvatarFallback() {
 // Fonction utilitaire pour afficher des notifications toast
 function showToast(message, type = 'info') {
   // Vérifier si Bootstrap est disponible
-  if (typeof bootstrap === 'undefined') {
-    console.log(`${type.toUpperCase()}: ${message}`);
+  if (typeof bootstrap === 'undefined' || !bootstrap.Toast) {
+    // Fallback simple sans Bootstrap
+    showSimpleNotification(message, type);
     return;
   }
 
@@ -434,15 +487,120 @@ function showToast(message, type = 'info') {
   const toastEl = document.getElementById(toastId);
   if (!toastEl) return;
   
-  const toast = new bootstrap.Toast(toastEl, {
-    autohide: true,
-    delay: 3000
-  });
-  
-  toast.show();
+  if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+    try {
+      const toast = new bootstrap.Toast(toastEl, {
+        autohide: true,
+        delay: 3000
+      });
+      toast.show();
+    } catch (err) {
+      console.error('Bootstrap Toast error:', err);
+      // Fallback to simple notification
+      showSimpleNotification(message, type === 'error' ? 'error' : 'success');
+      toastEl.remove();
+    }
+  } else {
+    // Bootstrap not available -> fallback
+    showSimpleNotification(message, type === 'error' ? 'error' : 'success');
+    toastEl.remove();
+  }
   
   // Nettoyer après la disparition
   toastEl.addEventListener('hidden.bs.toast', () => {
     toastEl.remove();
   });
 }
+
+// Fonction de fallback pour les notifications sans Bootstrap
+function showSimpleNotification(message, type = 'info') {
+  const notificationId = 'simple-notification-' + Date.now();
+  const colors = {
+    success: '#28a745',
+    error: '#dc3545',
+    warning: '#ffc107',
+    info: '#17a2b8'
+  };
+  
+  const notification = document.createElement('div');
+  notification.id = notificationId;
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: ${colors[type] || colors.info};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    max-width: 300px;
+    animation: slideIn 0.3s ease-out;
+    font-family: system-ui, -apple-system, sans-serif;
+  `;
+  
+  notification.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <span>${message}</span>
+      <button onclick="document.getElementById('${notificationId}').remove()" 
+              style="background: transparent; border: none; color: white; cursor: pointer; margin-left: 10px; font-size: 18px;">
+        ×
+      </button>
+    </div>
+  `;
+  
+  // Ajouter l'animation CSS si elle n'existe pas déjà
+  if (!document.querySelector('#notification-animation-style')) {
+    const style = document.createElement('style');
+    style.id = 'notification-animation-style';
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(notification);
+  
+  // Auto-suppression après 5 secondes
+  setTimeout(() => {
+    const notif = document.getElementById(notificationId);
+    if (notif) {
+      notif.remove();
+    }
+  }, 5000);
+}
+
+// Fonction pour vérifier et initialiser Bootstrap si disponible
+function initBootstrapIfAvailable() {
+  if (typeof bootstrap !== 'undefined') {
+    // Initialiser les tooltips si disponibles
+    if (bootstrap.Tooltip) {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+    }
+    
+    // Initialiser les popovers si disponibles
+    if (bootstrap.Popover) {
+      const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+      popoverTriggerList.forEach(function(popoverTriggerEl) {
+        new bootstrap.Popover(popoverTriggerEl);
+      });
+    }
+  }
+}
+
+// Initialiser Bootstrap au chargement si disponible
+document.addEventListener('DOMContentLoaded', function() {
+  initBootstrapIfAvailable();
+});

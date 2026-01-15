@@ -40,10 +40,13 @@ try {
             error_log('deactivate_employe (badge update): ' . $e->getMessage());
         }
 
+        // Badge has been revoked above — reflect that in the response payload
+        $badgeInfo = ['active' => false];
+
         // If this is an AJAX request, return JSON so the client can show an in-page notification without redirect
         if ($isAjax) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'message' => 'Employé désactivé', 'statut' => 'inactif']);
+            echo json_encode(['success' => true, 'message' => 'Employé désactivé', 'statut' => 'inactif', 'badge' => $badgeInfo]);
             exit();
         }
 

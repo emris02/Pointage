@@ -244,7 +244,7 @@ class AdminService {
         $sql = "
             SELECT p.id, e.id as employe_id, e.prenom, e.nom, e.departement, p.date_heure,
                    TIMEDIFF(p.date_heure, CONCAT(DATE(p.date_heure),' 09:00:00')) as retard,
-                   p.retard_cause, p.retard_justifie
+                   p.commentaire AS retard_cause, p.est_justifie AS retard_justifie
             FROM pointages p
             JOIN employes e ON p.employe_id = e.id
             WHERE p.type='arrivee' AND TIME(p.date_heure)>'09:00:00' AND DATE(p.date_heure)=:date

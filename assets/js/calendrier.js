@@ -227,6 +227,17 @@ function showEventDetails(event, isAdmin) {
     }
 }
 
+// Utilitaire global d'échappement HTML (réutilisé par le modal fallback)
+function escapeHtml(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Modal d'ajout/édition d'événement
 function showEventModal(eventId = null, defaultDate = null, isEdit = false) {
     const modalEl = document.getElementById('eventModal');

@@ -125,13 +125,34 @@ try {
     $heureActuelle = date('Y-m-d H:i:s');
     $dateAujourdhui = date('Y-m-d');
     
-    // Vérifier les doublons récents (même type dans les 30 dernières minutes)
+    // Vérifier le dernier pointage (pour détecter conflit post-arrivée)
     if ($userType === 'admin') {
+        $lastSql = "SELECT id, type, date_heure FROM pointages WHERE admin_id = :user_id AND DATE(date_heure) = :date ORDER BY date_heure DESC LIMIT 1";
         $dupSql = "SELECT id, date_heure FROM pointages WHERE admin_id = :user_id AND type = :type AND DATE(date_heure) = :date AND TIMESTAMPDIFF(MINUTE, date_heure, :now) < 30 ORDER BY date_heure DESC LIMIT 1";
     } else {
+        $lastSql = "SELECT id, type, date_heure FROM pointages WHERE employe_id = :user_id AND DATE(date_heure) = :date ORDER BY date_heure DESC LIMIT 1";
         $dupSql = "SELECT id, date_heure FROM pointages WHERE employe_id = :user_id AND type = :type AND DATE(date_heure) = :date AND TIMESTAMPDIFF(MINUTE, date_heure, :now) < 30 ORDER BY date_heure DESC LIMIT 1";
     }
 
+    // Récupérer le dernier pointage
+    $stmtLast = $pdo->prepare($lastSql);
+    $stmtLast->execute([':user_id' => $userId, ':date' => $dateAujourdhui]);
+    $lastPointage = $stmtLast->fetch(PDO::FETCH_ASSOC);
+
+    // Si le dernier pointage est une arrivée et qu'on tente une autre action (ex: départ, pause),
+    // on renvoie 409 pour forcer une validation explicite côté client
+    if ($lastPointage && $lastPointage['type'] === 'arrivee' && $typePointage !== 'arrivee') {
+        http_response_code(409);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Pointage en conflit : une arrivée a été enregistrée récemment. Validation requise (Pause / Départ / Annuler).',
+            'code' => 'NEEDS_CONFIRMATION',
+            'last' => $lastPointage
+        ]);
+        exit();
+    }
+
+    // Vérifier les doublons récents (même type dans les 30 dernières minutes)
     $stmt = $pdo->prepare($dupSql);
     $stmt->execute([
         ':user_id' => $userId,
@@ -145,12 +166,37 @@ try {
     if ($dernierPointage) {
         $heureDer = date('H:i', strtotime($dernierPointage['date_heure']));
         $diffMinutes = round((strtotime($heureActuelle) - strtotime($dernierPointage['date_heure'])) / 60);
+
+        // Tentative de régénération automatique du badge lorsqu'un départ a déjà été effectué
+        $badgeRegen = null;
+        $badgeRegenError = null;
+        try {
+            if ($userType === 'admin') {
+                $regen = BadgeManager::regenerateTokenForAdmin($userId, $pdo);
+            } else {
+                $regen = BadgeManager::regenerateToken($userId, $pdo);
+            }
+            if (!empty($regen['token'])) {
+                $badgeRegen = [
+                    'token' => $regen['token'],
+                    'token_hash' => $regen['token_hash'] ?? null,
+                    'expires_at' => $regen['expires_at'] ?? null
+                ];
+            }
+        } catch (Throwable $e) {
+            $badgeRegenError = $e->getMessage();
+            error_log('scan_qr.php badge regen on duplicate failed: ' . $e->getMessage());
+        }
+
         http_response_code(409);
         echo json_encode([
             'success' => false,
             'message' => "Pointage $typePointage déjà effectué à $heureDer (il y a $diffMinutes minutes)",
             'code' => 'POINTAGE_DUPLICATE',
-            'details' => ['last' => $dernierPointage]
+            'details' => ['last' => $dernierPointage],
+            'badge_regenerated' => $badgeRegen ? true : false,
+            'new_badge' => $badgeRegen,
+            'badge_regen_error' => $badgeRegenError
         ]);
         exit();
     }
@@ -202,18 +248,18 @@ try {
         
         // Pour les arrivées avec retard, nous pourrions aussi créer une entrée dans retard_cause
         if ($isLate && $retardMinutes > 0) {
-            // Optionnel: créer une entrée de retard à justifier
-            $stmt = $pdo->prepare('
-                UPDATE pointages 
-                SET retard_cause = :cause, 
-                    est_justifie = 0 
-                WHERE id = :id
-            ');
-            
-            $stmt->execute([
-                ':cause' => "Retard de {$retardMinutes} minutes - À justifier",
-                ':id' => $pointageId
+            // Créer une entrée dans `retards` pour suivre la justification
+            $stmtRet = $pdo->prepare("INSERT INTO retards (pointage_id, employe_id, raison, details, statut, date_soumission) VALUES (:pointage_id, :employe_id, 'retard', :details, 'en_attente', NOW())");
+            $stmtRet->execute([
+                ':pointage_id' => $pointageId,
+                ':employe_id' => $userType === 'admin' ? null : $userId,
+                ':details' => "Retard de {$retardMinutes} minutes - À justifier"
             ]);
+
+            // Marquer le pointage comme nécessitant justification
+            $stmt = $pdo->prepare('UPDATE pointages SET est_justifie = 0 WHERE id = :id');
+            $stmt->execute([':id' => $pointageId]);
+
             // Indiquer au client qu'une justification est requise
             $response['warning'] = $response['warning'] ?? "Attention : Retard de {$retardMinutes} minutes";
             $response['retard'] = true;
@@ -226,8 +272,16 @@ try {
             $currentHour = (int)date('H');
             if ($currentHour < 18) {
                 // Marquer la sortie comme nécessitant justification
-                $stmt = $pdo->prepare('UPDATE pointages SET est_justifie = 0, type_justification = :tj WHERE id = :id');
-                $stmt->execute([':tj' => 'depart_precoce', ':id' => $pointageId]);
+                // Enregistrer une demande de justification dans `retards`
+                $stmtRet = $pdo->prepare("INSERT INTO retards (pointage_id, employe_id, raison, details, statut, date_soumission) VALUES (:pointage_id, :employe_id, 'depart_anticipé', :details, 'en_attente', NOW())");
+                $stmtRet->execute([
+                    ':pointage_id' => $pointageId,
+                    ':employe_id' => $userType === 'admin' ? null : $userId,
+                    ':details' => 'Départ avant 18:00 - À justifier'
+                ]);
+
+                $stmt = $pdo->prepare('UPDATE pointages SET est_justifie = 0 WHERE id = :id');
+                $stmt->execute([':id' => $pointageId]);
 
                 $response['warning'] = 'Départ enregistré avant 18:00 ; une justification est requise.';
                 $response['needs_justification'] = true;

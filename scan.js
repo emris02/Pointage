@@ -115,11 +115,20 @@ const handleScan = async (result) => {
             },
             body: JSON.stringify({ badge_token: qrToken })
         });
-        
+
+        // Gérer conflit 409 -> demander validation
+        if (response.status === 409) {
+            const body = await response.json().catch(() => null);
+            const msg = (body && (body.message || body.code)) ? (body.message || body.code) : 'Pointage en conflit';
+            // show confirmation modal
+            await showConflictModal(msg, body);
+            return;
+        }
+
         if (!response.ok) {
             throw new Error('Erreur réseau lors de la requête');
         }
-        
+
         const pointageResult = await response.json();
         
         if (pointageResult.status !== 'success') {
@@ -148,6 +157,57 @@ const handleScan = async (result) => {
         scanner.start();
     }
 };
+
+// Modal helper for conflicts
+async function showConflictModal(message, payload){
+    return new Promise(async (resolve) => {
+        // create modal element
+        const modal = document.createElement('div');
+        modal.className = 'conflict-modal';
+        modal.style.position = 'fixed'; modal.style.left = 0; modal.style.top = 0; modal.style.right = 0; modal.style.bottom = 0; modal.style.background = 'rgba(0,0,0,0.4)'; modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center'; modal.style.zIndex = 2000;
+        modal.innerHTML = `
+            <div style="background:#fff;padding:20px;border-radius:8px;max-width:420px;width:90%">
+                <h5>Action détectée</h5>
+                <p id="conflictMsg">${message}</p>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                    <button id="conflictPause" class="btn btn-secondary">⏸️ Prendre une pause</button>
+                    <button id="conflictDepart" class="btn btn-warning">🚪 Départ anticipé</button>
+                    <button id="conflictCancel" class="btn btn-outline-secondary">❌ Annuler</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('conflictCancel').addEventListener('click', ()=>{ modal.remove(); resolve({action:'cancel'}); });
+        document.getElementById('conflictPause').addEventListener('click', async ()=>{
+            // open prompt for minutes
+            const mins = prompt('Durée de la pause (minutes)', '30'); if(!mins){ return; }
+            // call api/do_pause_confirm.php
+            const id = payload?.data?.employe_id || payload?.data?.admin_id || payload?.last?.id || null;
+            const type = payload?.data?.user_type || (payload && payload.last && payload.last.admin_id ? 'admin' : 'employe');
+            if(!id){ utils.showNotification('ID introuvable pour l\'action', 'danger'); return; }
+            try{
+                const res = await fetch('api/do_pause_confirm.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type, id, minutes: mins})});
+                const j = await res.json();
+                if(res.ok && j.status === 'success'){ utils.showNotification(j.message,'success'); // try to refresh UI
+                    const refreshBtn = document.getElementById('refresh-history'); if(refreshBtn) refreshBtn.click(); modal.remove(); resolve({action:'pause',result:j}); }
+                else { utils.showNotification(j.message||'Erreur', 'danger'); }
+            }catch(e){ utils.showNotification('Erreur: '+e.message,'danger'); }
+        });
+        document.getElementById('conflictDepart').addEventListener('click', async ()=>{
+            const reason = prompt('Motif du départ anticipé (obligatoire)'); if(!reason) return alert('Motif requis');
+            const id = payload?.data?.employe_id || payload?.data?.admin_id || payload?.last?.id || null;
+            const type = payload?.data?.user_type || (payload && payload.last && payload.last.admin_id ? 'admin' : 'employe');
+            if(!id){ utils.showNotification('ID introuvable pour l\'action', 'danger'); return; }
+            try{
+                const res = await fetch('api/do_depart_confirm.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type, id, reason})});
+                const j = await res.json();
+                if(res.ok && j.status === 'success'){ utils.showNotification(j.message,'success'); const refreshBtn = document.getElementById('refresh-history'); if(refreshBtn) refreshBtn.click(); modal.remove(); resolve({action:'depart',result:j}); }
+                else { utils.showNotification(j.message||'Erreur', 'danger'); }
+            }catch(e){ utils.showNotification('Erreur: '+e.message,'danger'); }
+        });
+    });
+}
 
 // Initialisation du scanner
 const scanner = new QrScanner(video, handleScan, scannerConfig);

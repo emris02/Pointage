@@ -4,6 +4,14 @@ require_once 'BadgeManager.php'; // Utilisation de la classe BadgeManager améli
 
 date_default_timezone_set('Europe/Paris');
 
+class ConflictException extends Exception {
+    public array $payload = [];
+    public function __construct(string $message = "", array $payload = []){
+        parent::__construct($message);
+        $this->payload = $payload;
+    }
+}
+
 class PointageSystem {
     private PDO $pdo;
     private $logger;
@@ -50,6 +58,11 @@ class PointageSystem {
             
             // Déterminer le type de pointage
             $type = $this->determinerTypePointage($lastPointage);
+
+            // Si le dernier est une arrivée et qu'on tente autre chose que 'arrivee', on exige une confirmation
+            if ($lastPointage && $lastPointage['type'] === 'arrivee' && $type !== 'arrivee') {
+                throw new ConflictException('Pointage en conflit : une arrivée a été enregistrée récemment. Validation requise (Pause / Départ / Annuler).', ['last' => $lastPointage]);
+            }
             
             // Traiter selon le type
             if ($type === 'arrivee') {
@@ -260,6 +273,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $system = new PointageSystem($pdo);
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $response = $system->handlePointageRequest($data);
+        echo json_encode($response);
+        exit;
+    } catch (ConflictException $ce) {
+        http_response_code(409);
+        echo json_encode([
+            'status' => 'error',
+            'code' => 'NEEDS_CONFIRMATION',
+            'message' => $ce->getMessage(),
+            'details' => $ce->payload
+        ]);
+        exit;
     } catch (Throwable $e) {
         $response = [
             'status' => 'error',

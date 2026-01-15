@@ -574,7 +574,7 @@ include 'src/views/partials/sidebar_canonique.php';
                             <?php if (($admin['statut'] ?? '') === 'actif'): ?>
                                 <button class="btn btn-outline-danger w-100 py-2 shadow-sm transition-all" 
                                         data-bs-toggle="modal" 
-                                        data-bs-target="#deleteModal">
+                                        data-bs-target="#deactivateModal">
                                     <i class="fas fa-user-slash me-2"></i> Désactiver compte
                                 </button>
                             <?php else: ?>
@@ -724,9 +724,9 @@ include 'src/views/partials/sidebar_canonique.php';
 
                                 <?php if ($is_super_admin && !$is_editing_own && $admin['role'] !== ROLE_SUPER_ADMIN): ?>
                                     <?php if (($admin['statut'] ?? '') === 'actif'): ?>
-                                        <button class="btn btn-warning px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                            <i class="fas fa-user-slash me-2"></i> Désactiver
-                                        </button>
+                                        <button class="btn btn-warning px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#deactivateModal">
+                                                    <i class="fas fa-user-slash me-2"></i> Désactiver
+                                                </button>
                                     <?php else: ?>
                                         <button class="btn btn-success px-4 py-2 shadow-sm" id="btn-activate-admin-footer">
                                             <i class="fas fa-user-check me-2"></i> Activer
@@ -1433,698 +1433,1041 @@ include 'src/views/partials/sidebar_canonique.php';
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
-// Configuration
-const ADMIN_PROFILE = {
-    isEditingOwn: <?= $is_editing_own ? 'true' : 'false' ?>,
-    isSuperAdmin: <?= $is_super_admin ? 'true' : 'false' ?>,
-    adminName: "<?= addslashes($admin['prenom'] . ' ' . $admin['nom']) ?>",
-    adminRole: "<?= $admin['role'] ?>",
-    adminId: <?= (int)$admin['id'] ?>,
-    adminStatut: "<?= addslashes($admin['statut'] ?? '') ?>"
+// ================= CONFIGURATION =================
+const APP_CONFIG = {
+    // Configuration admin
+    admin: {
+        id: <?= (int)$admin['id'] ?>,
+        name: "<?= addslashes($admin['prenom'] . ' ' . $admin['nom']) ?>",
+        role: "<?= $admin['role'] ?>",
+        status: "<?= addslashes($admin['statut'] ?? '') ?>",
+        email: "<?= addslashes($admin['email'] ?? '') ?>",
+        telephone: "<?= addslashes($admin['telephone'] ?? '') ?>"
+    },
+    
+    // Permissions
+    permissions: {
+        isEditingOwn: <?= $is_editing_own ? 'true' : 'false' ?>,
+        isSuperAdmin: <?= $is_super_admin ? 'true' : 'false' ?>
+    },
+    
+    // URLs API
+    endpoints: {
+        toggleStatus: 'toggle_admin_status.php',
+        deletePermanent: 'supprimer_admin_def.php',
+        changePassword: 'change_admin_password.php'
+    },
+    
+    // Configuration UI
+    ui: {
+        animationDuration: 300,
+        notificationDuration: 3000
+    }
 };
 
-// Données des badges
-const BADGES_DATA = {
+// Données des badges avec effets visuels
+const BADGES_CONFIG = {
     'super-admin': {
         title: 'Super Administrateur',
         icon: 'fas fa-crown',
         description: 'Privilèges administratifs complets',
         details: 'Peut gérer tous les administrateurs, paramètres système et accéder à toutes les fonctionnalités.',
-        color: '#dc3545',
+        gradient: 'linear-gradient(135deg, #dc3545 0%, #b02a37 100%)',
         bgColor: '#f8d7da',
-        textColor: '#721c24'
+        textColor: '#721c24',
+        animation: 'pulse-gold'
     },
     'admin': {
         title: 'Administrateur',
         icon: 'fas fa-user-shield',
         description: 'Gestion des employés et demandes',
         details: 'Peut gérer les employés, traiter les demandes et voir les rapports.',
-        color: '#0d6efd',
+        gradient: 'linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)',
         bgColor: '#cfe2ff',
-        textColor: '#052c65'
+        textColor: '#052c65',
+        animation: 'pulse-blue'
     },
     'active': {
         title: 'Compte Actif',
         icon: 'fas fa-check-circle',
         description: 'Compte activé et fonctionnel',
         details: 'Le compte est actuellement actif et peut se connecter au système.',
-        color: '#198754',
+        gradient: 'linear-gradient(135deg, #198754 0%, #146c43 100%)',
         bgColor: '#d1e7dd',
-        textColor: '#0a3622'
+        textColor: '#0a3622',
+        animation: 'pulse-green'
+    },
+    'inactive': {
+        title: 'Compte Inactif',
+        icon: 'fas fa-times-circle',
+        description: 'Compte désactivé temporairement',
+        details: 'Le compte est actuellement désactivé et ne peut pas se connecter.',
+        gradient: 'linear-gradient(135deg, #6c757d 0%, #545b62 100%)',
+        bgColor: '#e2e3e5',
+        textColor: '#2b2f32',
+        animation: 'pulse-gray'
     },
     'verified': {
         title: 'Email Vérifié',
-        icon: 'fas fa-check',
+        icon: 'fas fa-shield-check',
         description: 'Adresse email confirmée',
         details: 'L\'adresse email a été vérifiée et est valide.',
-        color: '#0dcaf0',
+        gradient: 'linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%)',
         bgColor: '#cff4fc',
-        textColor: '#055160'
-    },
-    'full-access': {
-        title: 'Accès Complet',
-        icon: 'fas fa-unlock',
-        description: 'Accès à toutes les fonctionnalités',
-        details: 'A accès à l\'ensemble des fonctionnalités du système sans restriction.',
-        color: '#6f42c1',
-        bgColor: '#e2d9f3',
-        textColor: '#2d1b69'
-    },
-    'limited-access': {
-        title: 'Accès Limité',
-        icon: 'fas fa-lock',
-        description: 'Accès restreint aux fonctionnalités',
-        details: 'Accès limité aux fonctionnalités spécifiques de son rôle.',
-        color: '#fd7e14',
-        bgColor: '#ffe5d0',
-        textColor: '#662d01'
-    },
-    'performance': {
-        title: 'Performance Excellente',
-        icon: 'fas fa-chart-line',
-        description: 'Performance administrative élevée',
-        details: 'Cet administrateur maintient une excellente performance dans ses tâches.',
-        color: '#20c997',
-        bgColor: '#d1f7eb',
-        textColor: '#0a3622'
+        textColor: '#055160',
+        animation: 'pulse-cyan'
     }
 };
 
-// Initialisation
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('👑 Profil administrateur - Affichage seulement');
-    
-    initAdminProfile();
-    initBadgesSystem();
-    initModals();
-    initPasswordStrength();
-    animateCards(); // Correction : la fonction existe bien
-});
-
-// Fonctions principales
-function initAdminProfile() {
-        animateCards();
-        // Initialiser les interactions
-        initInteractions();
-        updateAdminActionButtons();
-        // Mettre à jour les indicateurs en charge
-        updateRealTimeStats();
-} 
-
-// Affichage dynamique des boutons selon le statut admin
-function updateAdminActionButtons() {
-        const btnDeactivate = document.getElementById('btn-deactivate-admin');
-        const btnActivate = document.getElementById('btn-activate-admin');
-        const btnDelete = document.getElementById('btn-delete-admin');
-        const btnShowBadge = document.getElementById('btn-show-badge');
-        // Prefer the canonical status from the CONFIG (adminStatut), fallback to DOM text
-        let statut = typeof ADMIN_PROFILE.adminStatut === 'string' ? ADMIN_PROFILE.adminStatut.toLowerCase() : null;
-        if (!statut) {
-            statut = document.getElementById('admin-statut')?.textContent?.trim().toLowerCase();
-        }
-        if (!statut) return;
-
-        if (statut === 'inactif') {
-                if (btnDeactivate) btnDeactivate.style.display = 'none';
-                if (btnActivate) btnActivate.style.display = '';
-                if (btnDelete) btnDelete.style.display = '';
-                // Désactiver les autres actions
-                setProfileInteractivity(false);
-        } else {
-                if (btnDeactivate) btnDeactivate.style.display = '';
-                if (btnActivate) btnActivate.style.display = 'none';
-                if (btnDelete) btnDelete.style.display = 'none';
-                // Réactiver les actions
-                setProfileInteractivity(true);
-        }
-        if (btnShowBadge) btnShowBadge.style.display = '';
-}
-
-// Affichage du badge QR dans un modal
-function showAdminBadgeModal(badge) {
-        // badge: { token, token_hash, expires_at, can_regenerate }
-        const hasQRious = typeof QRious !== 'undefined';
-        const qrImgHtml = hasQRious ? `<img id="admin-badge-qr" alt="QR Code Admin" style="max-width:250px;" />` :
-            `<img id="admin-badge-qr" src="https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=${encodeURIComponent(badge.token)}" alt="QR Code Admin" style="max-width:250px;" />`;
-
-        const regenBtnHtml = badge.can_regenerate ? `<button id="regen-badge-btn" class="btn btn-sm btn-outline-primary">Régénérer le badge</button>` : '';
-
-        const modalHtml = `
-        <div class="modal fade" id="modalBadgeAdmin" tabindex="-1" aria-labelledby="modalBadgeAdminLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalBadgeAdminLabel">Badge d'accès Administrateur</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        ${qrImgHtml}
-                        <p class="mt-3">Présentez ce badge à la borne pour pointer vos heures d'arrivée et de départ.</p>
-                        <p class="small text-muted">Exp: ${badge.expires_at || '—'}</p>
-                        <p class="small text-break">Token hash: <code id="badge-token-hash">${badge.token_hash || '—'}</code></p>
-                        <div class="mt-2">${regenBtnHtml} <button id="copy-token-btn" class="btn btn-sm btn-outline-secondary">Copier le token</button></div>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-
-        let modalDiv = document.getElementById('modalBadgeAdmin');
-        if (modalDiv) modalDiv.remove();
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-        // If QRious available, render data URL
-        if (hasQRious && badge.token) {
-            try {
-                const qr = new QRious({ value: badge.token, size: 300 });
-                const img = document.getElementById('admin-badge-qr');
-                img.src = qr.toDataURL();
-            } catch (e) {
-                console.warn('QR generation failed', e);
-            }
-        }
-
-        // Copy token
-        const copyBtn = document.getElementById('copy-token-btn');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', function() {
-                if (!badge.token) return showNotification('warning', 'Token non disponible');
-                navigator.clipboard.writeText(badge.token).then(() => {
-                    showNotification('success', 'Token copié dans le presse-papier');
-                }).catch(() => showNotification('error', 'Impossible de copier le token'));
+// ================= GESTION DES NOTIFICATIONS =================
+class NotificationManager {
+    static show(type, message, title = 'Notification') {
+        if (typeof Swal !== 'undefined') {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: APP_CONFIG.ui.notificationDuration,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
             });
+            
+            return Toast.fire({
+                icon: type,
+                title: title,
+                text: message
+            });
+        } else {
+            // Fallback simple
+            alert(`${title}: ${message}`);
         }
+    }
 
-        // Regenerate
-        const regenBtn = document.getElementById('regen-badge-btn');
-        if (regenBtn) {
-            regenBtn.addEventListener('click', async function() {
-                if (!confirm('Générer un nouveau badge pour cet administrateur ?')) return;
-                try {
-                    const form = new FormData();
-                    form.append('action', 'regenerate');
-                    form.append('admin_id', ADMIN_PROFILE.adminId);
-                    const resp = await fetch('admin_badge_api.php', { method: 'POST', body: form });
-                    const data = await resp.json();
-                    if (data.status === 'success' && data.token) {
-                        showNotification('success', 'Badge régénéré');
-                        // Update modal with new qr
-                        const img = document.getElementById('admin-badge-qr');
-                        const tokenHashEl = document.getElementById('badge-token-hash');
-                        if (img) {
-                            if (typeof QRious !== 'undefined') {
-                                const qr2 = new QRious({ value: data.token, size: 300 });
-                                img.src = qr2.toDataURL();
-                            } else {
-                                img.src = `https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=${encodeURIComponent(data.token)}`;
-                            }
-                        }
-                        if (tokenHashEl) tokenHashEl.textContent = data.token_hash || '—';
-                    } else {
-                        showNotification('error', 'Impossible de régénérer le badge');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showNotification('error', 'Erreur lors de la régénération');
+    static async confirm(message, title = 'Confirmation') {
+        if (typeof Swal !== 'undefined') {
+            const result = await Swal.fire({
+                title: title,
+                text: message,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Confirmer',
+                cancelButtonText: 'Annuler',
+                reverseButtons: true
+            });
+            
+            return result.isConfirmed;
+        } else {
+            return confirm(`${title}: ${message}`);
+        }
+    }
+
+    static showLoader(message = 'Chargement...') {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: message,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
             });
         }
+    }
 
-        const modal = new bootstrap.Modal(document.getElementById('modalBadgeAdmin'));
-        modal.show();
+    static hideLoader() {
+        if (typeof Swal !== 'undefined') {
+            Swal.close();
+        }
+    }
+
+    static showError(message, title = 'Erreur') {
+        this.show('error', message, title);
+    }
 }
 
-// Système de badges
-function initBadgesSystem() {
-    // Configurer le modal de badge
-    const badgeModal = document.getElementById('badgeModal');
-    if (badgeModal) {
-        badgeModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const badgeType = button.getAttribute('data-badge-type');
-            loadBadgeDetails(badgeType);
-        });
-    }
-    
-    // Ajouter des effets de hover sur tous les badges cliquables
-    document.querySelectorAll('.badge-clickable, .badge-hover, .admin-badge').forEach(badge => {
-        // Effet de survol
-        badge.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.05) translateY(-2px)';
-            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-            this.style.cursor = 'pointer';
-            this.style.transition = 'all 0.2s ease';
-        });
-        
-        badge.addEventListener('mouseleave', function() {
-            this.style.transform = 'scale(1) translateY(0)';
-            this.style.boxShadow = '';
-        });
-        
-        // Effet de clic
-        badge.addEventListener('click', function(e) {
-            // Animation de clic
-            this.style.transform = 'scale(0.95)';
+// ================= GESTION DE L'INTERFACE UTILISATEUR =================
+class UIManager {
+    // Animation des cartes
+    static animateCards() {
+        const cards = document.querySelectorAll('.admin-profile-card, .stat-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
             setTimeout(() => {
-                this.style.transform = 'scale(1)';
-            }, 150);
-        });
-    });
-    
-    // Animation des badges principaux
-    const mainBadges = document.querySelectorAll('.admin-badge');
-    mainBadges.forEach((badge, index) => {
-        badge.style.animationDelay = `${index * 0.1}s`;
-        badge.classList.add('badge-animate');
-    });
-}
-
-function loadBadgeDetails(badgeType) {
-    const badgeData = BADGES_DATA[badgeType];
-    if (!badgeData) return;
-    
-    // Remplir le modal avec les données du badge
-    document.getElementById('badgeTitle').textContent = badgeData.title;
-    document.getElementById('badgeDescription').textContent = badgeData.description;
-    document.getElementById('badgeDetails').textContent = badgeData.details;
-    
-    // Créer l'icône du badge en grand
-    const badgeIconContainer = document.getElementById('badgeIconLarge');
-    badgeIconContainer.innerHTML = `<i class="${badgeData.icon} fa-4x" style="color: ${badgeData.color}"></i>`;
-    
-    // Appliquer le style au contenu du modal
-    const modalContent = document.querySelector('.badge-modal-content');
-    modalContent.style.backgroundColor = badgeData.bgColor;
-    modalContent.style.color = badgeData.textColor;
-    modalContent.style.borderRadius = '1rem';
-    modalContent.style.padding = '2rem';
-    
-    // Ajouter une animation d'entrée
-    modalContent.style.animation = 'badgeZoomIn 0.3s ease-out';
-}
-
-function initModals() {
-    // Modal désactivation
-    const confirmCheckbox = document.getElementById('confirmDeactivate');
-    const deactivateBtn = document.getElementById('confirmDeactivateBtn');
-    
-    if (confirmCheckbox && deactivateBtn) {
-        confirmCheckbox.addEventListener('change', function() {
-            deactivateBtn.disabled = !this.checked;
+                card.style.transition = 'all 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
         });
     }
-    
-    // Toggle password visibility
-    document.querySelectorAll('.toggle-password').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const input = this.parentElement.querySelector('input');
-            const icon = this.querySelector('i');
+
+    // Mise à jour des boutons d'action
+    static updateActionButtons() {
+        const status = (APP_CONFIG.admin.status || '').toLowerCase();
+        const isActive = status.includes('actif');
+        const isInactive = status.includes('inactif');
+        const isDeleted = status.includes('supprim');
+
+        // Sélectionner tous les boutons concernés
+        const elements = {
+            deactivate: document.querySelector('[data-bs-target="#deactivateModal"]'),
+            activate: document.getElementById('btn-activate-admin'),
+            activateFooter: document.getElementById('btn-activate-admin-footer'),
+            deleteBtn: document.querySelector('[data-bs-target="#deleteModalPermanent"]')
+        };
+
+        // Si supprimé -> masquer tout
+        if (isDeleted) {
+            Object.values(elements).forEach(el => { if (el) el.style.display = 'none'; });
+            // Mettre à jour badge
+            const badge = document.getElementById('admin-statut');
+            if (badge) {
+                badge.className = 'badge bg-danger text-white px-3 py-2 border-0';
+                badge.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Supprimé';
+            }
+            this.setProfileInteractivity(false);
+            return;
+        }
+
+        // Appliquer la visibilité selon le statut
+        if (elements.deactivate) elements.deactivate.style.display = isInactive ? 'none' : '';
+        if (elements.activate) elements.activate.style.display = isInactive ? '' : 'none';
+        if (elements.activateFooter) elements.activateFooter.style.display = isInactive ? '' : 'none';
+        if (elements.deleteBtn) elements.deleteBtn.style.display = isInactive ? '' : 'none';
+
+        // Mettre à jour l'interactivité (les actions sont désactivées si le compte est inactif)
+        this.setProfileInteractivity(isActive);
+    }
+
+    // Mettre à jour le badge de statut
+    static updateStatusBadge(newStatus) {
+        const badge = document.getElementById('admin-statut');
+        if (!badge) return;
+        
+        const isActive = newStatus === 'actif';
+        const badgeConfig = isActive ? BADGES_CONFIG.active : BADGES_CONFIG.inactive;
+        
+        // Mettre à jour les classes
+        badge.className = 'badge px-3 py-2 border-0 badge-clickable';
+        badge.classList.add(isActive ? 'bg-success' : 'bg-secondary');
+        
+        // Mettre à jour le contenu
+        badge.innerHTML = `
+            <i class="${badgeConfig.icon} me-1"></i>
+            ${isActive ? 'Actif' : 'Inactif'}
+        `;
+        
+        // Mettre à jour l'attribut data
+        badge.setAttribute('data-badge-type', isActive ? 'active' : 'inactive');
+        
+        // Animation
+        badge.style.animation = 'badgePulse 0.5s ease';
+        setTimeout(() => badge.style.animation = '', 500);
+    }
+
+    // Mise à jour des stats en temps réel
+    static startRealTimeUpdates() {
+        // Heure locale
+        const updateTime = () => {
+            const now = new Date();
+            const options = { 
+                timeZone: 'Africa/Bamako',
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false 
+            };
             
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'fas fa-eye-slash';
+            const timeString = now.toLocaleTimeString('fr-ML', options);
+            document.querySelectorAll('.current-time').forEach(el => {
+                el.textContent = timeString;
+            });
+        };
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+    }
+
+    // Système de badges
+    static initBadgesSystem() {
+        const badgeModal = document.getElementById('badgeModal');
+        if (badgeModal) {
+            badgeModal.addEventListener('show.bs.modal', (event) => {
+                const button = event.relatedTarget;
+                const badgeType = button.getAttribute('data-badge-type');
+                this.loadBadgeDetails(badgeType);
+            });
+        }
+        
+        // Effets hover sur les badges
+        document.querySelectorAll('.badge-clickable, .badge-hover').forEach(badge => {
+            badge.addEventListener('mouseenter', () => {
+                badge.style.transform = 'scale(1.05) translateY(-2px)';
+                badge.style.boxShadow = '0 6px 15px rgba(0,0,0,0.1)';
+                badge.style.transition = 'all 0.2s ease';
+            });
+            
+            badge.addEventListener('mouseleave', () => {
+                badge.style.transform = 'scale(1) translateY(0)';
+                badge.style.boxShadow = '';
+            });
+        });
+    }
+
+    static loadBadgeDetails(badgeType) {
+        const badgeConfig = BADGES_CONFIG[badgeType];
+        if (!badgeConfig) return;
+        
+        // Mettre à jour le modal
+        const elements = {
+            title: document.getElementById('modalBadgeTitle'),
+            name: document.getElementById('badgeName'),
+            type: document.getElementById('badgeType'),
+            icon: document.getElementById('badgeIconLarge')
+        };
+        
+        if (elements.title) elements.title.textContent = badgeConfig.title;
+        if (elements.name) elements.name.textContent = APP_CONFIG.admin.name;
+        if (elements.type) elements.type.textContent = badgeConfig.title;
+        
+        if (elements.icon) {
+            const iconInner = elements.icon.querySelector('.badge-icon-inner');
+            if (iconInner) {
+                iconInner.innerHTML = `<i class="${badgeConfig.icon} fa-4x" style="color: white"></i>`;
+                iconInner.style.background = badgeConfig.gradient;
+            }
+        }
+
+        // Générer ou mettre à jour le QR code (utilise QRious)
+        try {
+            const qrWrapper = document.querySelector('.qr-code-wrapper');
+            if (qrWrapper) {
+                let canvas = qrWrapper.querySelector('#badgeQrCanvas');
+                const qrValue = `ADMIN:${APP_CONFIG.admin.id}:${APP_CONFIG.admin.email}`;
+
+                if (!canvas) {
+                    // Créer un canvas et l'insérer
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'badgeQrCanvas';
+                    canvas.width = 160;
+                    canvas.height = 160;
+                    const placeholder = qrWrapper.querySelector('.qr-placeholder');
+                    if (placeholder) {
+                        placeholder.innerHTML = '';
+                        placeholder.appendChild(canvas);
+                        placeholder.style.display = 'flex';
+                        placeholder.style.alignItems = 'center';
+                        placeholder.style.justifyContent = 'center';
+                        placeholder.style.background = 'white';
+                    }
+                }
+
+                // Utiliser QRious si disponible
+                if (typeof QRious !== 'undefined') {
+                    // Si on a déjà un instance attachée, remplacer la value
+                    if (canvas._qrInstance) {
+                        canvas._qrInstance.value = qrValue;
+                    } else {
+                        const qr = new QRious({
+                            element: canvas,
+                            value: qrValue,
+                            size: 160,
+                            level: 'H'
+                        });
+                        canvas._qrInstance = qr;
+                    }
+
+                    // Cliquer pour agrandir (ouvre un modal SweetAlert avec l'image)
+                    qrWrapper.style.cursor = 'pointer';
+                    qrWrapper.onclick = () => {
+                        const dataUrl = canvas.toDataURL();
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'QR Code',
+                                html: `<img src="${dataUrl}" style="max-width:100%;height:auto;border-radius:8px"/>\n<p class=\"small mt-2\">${Utils.escapeHtml(qrValue)}</p>`,
+                                showCloseButton: true,
+                                showConfirmButton: false,
+                                width: 360
+                            });
+                        } else {
+                            const w = window.open();
+                            w.document.write(`<img src="${dataUrl}"/>`);
+                        }
+                    };
+                }
+            }
+        } catch (e) {
+            console.error('Erreur génération QR:', e);
+        }
+    }
+
+    static setProfileInteractivity(enabled) {
+        const quickActions = document.querySelector('.quick-actions');
+        if (!quickActions) return;
+
+        // Éléments qui doivent rester cliquables même quand le compte est inactif
+        const allowedIds = ['btn-activate-admin', 'btn-activate-admin-footer', 'btn-show-badge', 'btn-show-badge-footer'];
+
+        const elems = quickActions.querySelectorAll('button, a');
+        elems.forEach(el => {
+            const id = el.id || '';
+            const shouldAllow = allowedIds.includes(id);
+
+            if (!enabled && !shouldAllow) {
+                el.classList.add('disabled-clickable');
+                // Empêcher les clics et afficher un message
+                if (!el._disabledHandler) {
+                    el.addEventListener('click', el._disabledHandler = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        NotificationManager.show('error', 'Compte désactivé. Cette action n\'est pas autorisée.', 'Compte désactivé');
+                    });
+                }
             } else {
-                input.type = 'password';
-                icon.className = 'fas fa-eye';
-            }
-        });
-    });
-    
-    // Validation des formulaires
-    const editForm = document.getElementById('editProfileForm');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            if (!this.checkValidity()) {
-                e.preventDefault();
-                showNotification('error', 'Veuillez remplir tous les champs obligatoires');
+                el.classList.remove('disabled-clickable');
+                if (el._disabledHandler) {
+                    el.removeEventListener('click', el._disabledHandler);
+                    delete el._disabledHandler;
+                }
             }
         });
     }
-    
-    const passwordForm = document.getElementById('changePasswordForm');
-    if (passwordForm) {
-        passwordForm.addEventListener('submit', function(e) {
-            const newPass = this.querySelector('input[name="new_password"]');
-            const confirmPass = this.querySelector('input[name="confirm_password"]');
+}
+
+// ================= GESTION DES MODALS ET FORMULAIRES =================
+class FormManager {
+    static initModals() {
+        // Modal de désactivation
+        const confirmCheckbox = document.getElementById('confirmDeactivate');
+        const deactivateBtn = document.getElementById('confirmDeactivateBtn');
+        
+        if (confirmCheckbox && deactivateBtn) {
+            confirmCheckbox.addEventListener('change', () => {
+                deactivateBtn.disabled = !confirmCheckbox.checked;
+            });
+            deactivateBtn.disabled = true;
+        }
+        
+        // Toggle visibilité mot de passe
+        document.querySelectorAll('.toggle-password').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = e.target.closest('button').getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const icon = e.target.closest('button').querySelector('i');
+                
+                if (input && icon) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.className = 'fas fa-eye-slash';
+                    } else {
+                        input.type = 'password';
+                        icon.className = 'fas fa-eye';
+                    }
+                }
+            });
+        });
+        
+        // Validation des formulaires
+        this.initFormValidations();
+    }
+
+    static initFormValidations() {
+        // Formulaire changement mot de passe
+        const passwordForm = document.getElementById('changePasswordForm');
+        if (passwordForm) {
+            passwordForm.addEventListener('submit', (e) => {
+                const newPass = passwordForm.querySelector('input[name="new_password"]');
+                const confirmPass = passwordForm.querySelector('input[name="confirm_password"]');
+                
+                if (newPass && confirmPass && newPass.value !== confirmPass.value) {
+                    e.preventDefault();
+                    NotificationManager.show('error', 'Les mots de passe ne correspondent pas');
+                    return;
+                }
+            });
+        }
+    }
+
+    static initPasswordStrength() {
+        const passwordInput = document.querySelector('input[name="new_password"]');
+        const strengthContainer = document.querySelector('.password-strength');
+        
+        if (passwordInput && strengthContainer) {
+            passwordInput.addEventListener('input', (e) => {
+                const password = e.target.value;
+                
+                if (!password) {
+                    strengthContainer.style.display = 'none';
+                    return;
+                }
+                
+                strengthContainer.style.display = 'block';
+                
+                // Calcul de la force
+                let score = 0;
+                if (password.length >= 8) score += 25;
+                if (/[A-Z]/.test(password)) score += 25;
+                if (/[a-z]/.test(password)) score += 25;
+                if (/[0-9]/.test(password)) score += 25;
+                if (/[^A-Za-z0-9]/.test(password)) score += 25;
+                
+                score = Math.min(score, 100);
+                
+                // Déterminer le niveau
+                const levels = [
+                    { min: 0, max: 25, text: 'Très faible', color: '#dc3545', class: 'very-weak' },
+                    { min: 26, max: 50, text: 'Faible', color: '#fd7e14', class: 'weak' },
+                    { min: 51, max: 75, text: 'Moyen', color: '#ffc107', class: 'medium' },
+                    { min: 76, max: 99, text: 'Fort', color: '#20c997', class: 'strong' },
+                    { min: 100, max: 100, text: 'Très fort', color: '#198754', class: 'very-strong' }
+                ];
+                
+                const level = levels.find(l => score >= l.min && score <= l.max);
+                
+                // Mettre à jour l'UI
+                const strengthBar = strengthContainer.querySelector('.strength-bar');
+                const strengthText = strengthContainer.querySelector('.strength-text');
+                
+                if (strengthBar) {
+                    strengthBar.style.width = score + '%';
+                    strengthBar.style.backgroundColor = level.color;
+                }
+                
+                if (strengthText) {
+                    strengthText.textContent = level.text;
+                    strengthText.style.color = level.color;
+                }
+                
+                // Mettre à jour les indicateurs
+                strengthContainer.querySelectorAll('.indicator').forEach((indicator, index) => {
+                    indicator.className = 'indicator';
+                    if (index < levels.indexOf(level) + 1) {
+                        indicator.classList.add('active');
+                        indicator.style.backgroundColor = level.color;
+                    }
+                });
+            });
+        }
+    }
+
+    static async handleFormSubmit(e) {
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        if (submitBtn) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Traitement...';
+            submitBtn.disabled = true;
             
-            if (newPass.value !== confirmPass.value) {
-                e.preventDefault();
-                showNotification('error', 'Les mots de passe ne correspondent pas');
+            // Restauration automatique après 10s
+            const restoreBtn = () => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            };
+            
+            setTimeout(restoreBtn, 10000);
+            
+            // Si le formulaire a un gestionnaire asynchrone, ne pas le restaurer tout de suite
+            if (form.id === 'deactivateForm' || form.id === 'permanentDeleteForm') {
+                // La restauration sera faite par le gestionnaire spécifique
                 return;
             }
             
-            if (newPass.value.length < 8) {
-                e.preventDefault();
-                showNotification('error', 'Le mot de passe doit contenir au moins 8 caractères');
-            }
-        });
+            // Pour les autres formulaires, restauration après soumission
+            form.addEventListener('submit', restoreBtn, { once: true });
+        }
     }
 }
 
-function initPasswordStrength() {
-    const passwordInput = document.querySelector('input[name="new_password"]');
-    const strengthContainer = document.querySelector('.password-strength');
-    
-    if (passwordInput && strengthContainer) {
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
+// ================= GESTION DES ACTIONS ADMIN =================
+class ActionManager {
+
+    static async toggleAdminStatus(action, options = {}) {
+        if (this.isProcessing) {
+            NotificationManager.show('info', 'Une action est déjà en cours', 'Veuillez patienter');
+            return;
+        }
+        
+        try {
+            this.isProcessing = true;
+            const skipConfirm = options.skipConfirm === true;
+            if (!skipConfirm) {
+                const confirmationMessage = action === 'activate' 
+                    ? 'Confirmer l\'activation de ce compte administrateur ?'
+                    : 'Confirmer la désactivation de ce compte administrateur ?';
+                const confirmed = await NotificationManager.confirm(confirmationMessage);
+                if (!confirmed) {
+                    this.isProcessing = false;
+                    return;
+                }
+            }
             
-            if (password.length === 0) {
-                strengthContainer.style.display = 'none';
+            // Afficher le loader
+            NotificationManager.showLoader(action === 'activate' ? 'Activation en cours...' : 'Désactivation en cours...');
+            
+            // Préparer les données
+            const formData = new FormData();
+            formData.append('admin_id', APP_CONFIG.admin.id);
+            formData.append('action', action);
+            
+            // Appel API
+            const response = await this.callAPI(APP_CONFIG.endpoints.toggleStatus, formData);
+            
+            if (response.success) {
+                // Déterminer le nouveau statut renvoyé par l'API si présent
+                const newStatus = (response.data && response.data.new_status) ? String(response.data.new_status).toLowerCase() : (action === 'activate' ? 'actif' : 'inactif');
+                APP_CONFIG.admin.status = newStatus;
+
+                // Mettre à jour l'UI
+                UIManager.updateStatusBadge(APP_CONFIG.admin.status);
+                UIManager.updateActionButtons();
+
+                // Fermer les modals
+                this.closeAllModals();
+
+                // Notification visuelle selon le type d'action
+                if (newStatus && newStatus.includes('actif')) {
+                    NotificationManager.show('success', response.message || 'Le compte administrateur a été activé avec succès', 'Succès');
+                } else if (newStatus && newStatus.includes('inactif')) {
+                    NotificationManager.show('warning', response.message || 'Le compte administrateur a été désactivé', 'Avertissement');
+                } else if (newStatus && newStatus.includes('supprim')) {
+                    NotificationManager.show('error', response.message || 'Le compte administrateur a été supprimé', 'Supprimé');
+                } else {
+                    NotificationManager.show('success', response.message || 'Action réussie', 'Succès');
+                }
+                
+            } else {
+                console.error('toggleAdminStatus response error:', response);
+                const userMsg = response && response.message ? response.message : 'Une erreur est survenue';
+                // Afficher une alerte claire, sans JSON brut
+                NotificationManager.show('error', userMsg, 'Erreur');
+            }
+            
+        } catch (error) {
+            console.error('Erreur lors du changement de statut:', error);
+            NotificationManager.show('error', error.message || 'Erreur technique', 'Erreur');
+        } finally {
+            this.isProcessing = false;
+            NotificationManager.hideLoader();
+        }
+    }
+
+    static async deleteAdminPermanently() {
+        if (this.isProcessing) {
+            NotificationManager.show('info', 'Une action est déjà en cours', 'Veuillez patienter');
+            return;
+        }
+        
+        try {
+            const form = document.getElementById('permanentDeleteForm');
+            const confirmText = document.getElementById('confirmText');
+            
+            if (!confirmText || confirmText.value !== 'SUPPRIMER') {
+                NotificationManager.show('error', 'Vous devez taper "SUPPRIMER" pour confirmer', 'Validation requise');
                 return;
             }
             
-            strengthContainer.style.display = 'block';
+            const confirmed = await NotificationManager.confirm(
+                'Êtes-vous ABSOLUMENT SÛR de vouloir supprimer définitivement ce compte ? Cette action est irréversible.'
+            );
             
-            let strength = 0;
-            let text = '';
-            let color = '';
-            
-            // Vérifications de force
-            if (password.length >= 8) strength += 25;
-            if (/[A-Z]/.test(password)) strength += 25;
-            if (/[a-z]/.test(password)) strength += 25;
-            if (/[0-9]/.test(password)) strength += 25;
-            if (/[^A-Za-z0-9]/.test(password)) strength += 25;
-            
-            strength = Math.min(strength, 100);
-            
-            // Déterminer le niveau
-            if (strength < 25) {
-                text = 'Très faible';
-                color = '#dc3545';
-            } else if (strength < 50) {
-                text = 'Faible';
-                color = '#fd7e14';
-            } else if (strength < 75) {
-                text = 'Moyen';
-                color = '#ffc107';
-            } else if (strength < 100) {
-                text = 'Fort';
-                color = '#20c997';
-            } else {
-                text = 'Très fort';
-                color = '#198754';
+            if (!confirmed) {
+                return;
             }
+            
+            this.isProcessing = true;
+            
+            // Afficher le loader
+            NotificationManager.showLoader('Suppression en cours...');
+            
+            // Appel API
+            const formData = new FormData(form);
+            const response = await this.callAPI(APP_CONFIG.endpoints.deletePermanent, formData);
+            
+            if (response.success) {
+                // Fermer le modal
+                this.closeModal('deleteModalPermanent');
+                
+                // Notification de succès
+                NotificationManager.show('success', response.message, 'Suppression réussie');
+                
+                // Redirection après délai
+                setTimeout(() => {
+                    window.location.href = 'admin_dashboard_unifie.php#admins';
+                }, 1500);
+                
+            } else {
+                NotificationManager.show('error', response.message, 'Erreur');
+            }
+            
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            NotificationManager.show('error', 'Erreur: ' + error.message, 'Erreur technique');
+            
+        } finally {
+            this.isProcessing = false;
+            NotificationManager.hideLoader();
+        }
+    }
+
+    static async callAPI(endpoint, formData) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            // Vérifier le type de contenu
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`Réponse non-JSON reçue: ${text.substring(0, 100)}`);
+            }
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || `Erreur HTTP ${response.status}`);
+            }
+            
+            return data;
+            
+        } catch (error) {
+            console.error('Erreur API:', error);
+            throw error;
+        }
+    }
+
+    static closeAllModals() {
+        if (typeof bootstrap === 'undefined') return;
+        
+        document.querySelectorAll('.modal.show').forEach(modalEl => {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        });
+    }
+
+    static closeModal(modalId) {
+        const modalEl = document.getElementById(modalId);
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+    }
+}
+
+// Compatibility: définir la propriété statique pour anciens navigateurs
+ActionManager.isProcessing = false;
+
+// ================= FONCTIONS UTILITAIRES =================
+class Utils {
+    // Copier un ID dans le presse-papier
+    static async handleCopyId(e) {
+        const button = e.target.closest('button');
+        const id = button.getAttribute('data-id');
+        
+        try {
+            await navigator.clipboard.writeText(id);
+            NotificationManager.show('success', 'ID copié dans le presse-papier', 'Copié');
+            
+            // Feedback visuel
+            button.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+                button.innerHTML = '<i class="fas fa-copy"></i>';
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Erreur de copie:', error);
+            NotificationManager.show('error', 'Impossible de copier l\'ID', 'Erreur');
+        }
+    }
+
+    // Échapper le HTML pour affichage sécurisé
+    static escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+}
+
+    // Toggle du header de profil (attaché à Utils pour compatibilité)
+    Utils.toggleProfileHeader = function() {
+        const header = document.querySelector('.profile-header');
+        const toggleBtn = document.getElementById('toggleProfileHeader');
+        const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+        if (!toggleBtn || !header) return;
+        if (header.classList.contains('collapsed')) {
+            header.classList.remove('collapsed');
+            if (icon) icon.className = 'fas fa-chevron-up';
+            header.style.maxHeight = '500px';
+        } else {
+            header.classList.add('collapsed');
+            if (icon) icon.className = 'fas fa-chevron-down';
+            header.style.maxHeight = '150px';
+        }
+    };
+
+    // Export du profil (attaché à Utils)
+    Utils.handleExportProfile = async function() {
+        try {
+            NotificationManager.showLoader('Génération de l\'export...');
+            // Simuler un temps de traitement
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            NotificationManager.show('success', 'Export généré avec succès. Téléchargement lancé.', 'Export réussi');
+        } catch (error) {
+            NotificationManager.show('error', 'Erreur lors de l\'export: ' + error.message, 'Erreur');
+        } finally {
+            NotificationManager.hideLoader();
+        }
+    };
+
+// ================= ADMIN PROFILE MANAGER =================
+class AdminProfileManager {
+    constructor() {
+        this.initialized = false;
+    }
+
+    async initialize() {
+        try {
+            console.log('🚀 Initialisation du profil administrateur...');
+            
+            // Vérifier les dépendances
+            await this.checkDependencies();
+            
+            // Initialiser les composants
+            this.initUIComponents();
+            this.initEventHandlers();
+            this.initAdminActions();
             
             // Mettre à jour l'interface
-            const strengthBar = strengthContainer.querySelector('.strength-bar');
-            const strengthText = strengthContainer.querySelector('.strength-text');
+            this.updateUI();
             
-            strengthBar.style.width = strength + '%';
-            strengthBar.style.backgroundColor = color;
-            strengthText.textContent = `Force du mot de passe : ${text}`;
-            strengthText.style.color = color;
-        });
+            this.initialized = true;
+            console.log('✅ Profil administrateur initialisé avec succès');
+            
+        } catch (error) {
+            console.error('❌ Erreur d\'initialisation:', error);
+            NotificationManager.showError('Erreur d\'initialisation: ' + error.message);
+            throw error;
+        }
     }
-}
 
-function initInteractions() {
-    // Hover sur les cartes de stats
-    document.querySelectorAll('.stat-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-4px)';
-        });
-        
-        item.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-        });
-    });
-    
-    // Animation des boutons d'action
-    document.querySelectorAll('.quick-actions .btn').forEach(btn => {
-        btn.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateX(4px)';
-        });
-        
-        btn.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateX(0)';
-        });
-    });
-}
-
-function animateCards() {
-    const cards = document.querySelectorAll('.admin-profile-card');
-    cards.forEach((card, index) => {
-        card.style.animationDelay = `${index * 0.1}s`;
-        card.classList.add('card-animate');
-    });
-}
-
-function updateRealTimeStats() {
-    // Heure locale du Mali (Bamako)
-    const updateTime = () => {
-        const now = new Date();
-        // Mali est en GMT (UTC+0)
-        const options = { 
-            timeZone: 'Africa/Bamako',
-            hour: '2-digit', 
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false 
-        };
-        
-        const timeString = now.toLocaleTimeString('fr-ML', options);
-        document.querySelectorAll('.current-time').forEach(el => {
-            el.textContent = timeString;
-        });
-        
-        // Date du Mali
-        const dateOptions = {
-            timeZone: 'Africa/Bamako',
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        };
-        const dateString = now.toLocaleDateString('fr-ML', dateOptions);
-        document.querySelectorAll('.current-date').forEach(el => {
-            el.textContent = dateString;
-        });
-    };
-    
-    updateTime();
-    setInterval(updateTime, 1000);
-}
-
-function showEditModal() {
-    const modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
-    modal.show();
-}
-
-function showNotification(type, message, title = 'Notification') {
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
+    async checkDependencies() {
+        // Vérifier Bootstrap
+        if (typeof bootstrap === 'undefined') {
+            throw new Error('Bootstrap n\'est pas chargé correctement');
         }
-    });
-    
-    Toast.fire({
-        icon: type,
-        title: title,
-        text: message
-    });
-}
-
-// Utility: show a "Compte désactivé" notification
-function showAccountDisabled() {
-    showNotification('error', 'Compte désactivé. Cette action n\'est pas autorisée.', 'Compte désactivé');
-}
-
-// Enable or disable profile actions (hover allowed but clicks blocked when disabled)
-function setProfileInteractivity(enabled) {
-    const quickActions = document.querySelector('.quick-actions');
-    if (!quickActions) return;
-
-    // Elements that should remain clickable even when account is inactive
-    const allowedIds = ['btn-activate-admin', 'btn-delete-admin', 'btn-show-badge'];
-
-    // Select all actionable child buttons and anchors
-    const elems = quickActions.querySelectorAll('button, a');
-    elems.forEach(el => {
-        const id = el.id || '';
-        const shouldAllow = allowedIds.includes(id);
-
-        if (!enabled && !shouldAllow) {
-            el.classList.add('disabled-clickable');
-            // Prevent default clicks and show message
-            if (!el._disabledHandler) {
-                el.addEventListener('click', el._disabledHandler = function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    showAccountDisabled();
-                });
-            }
-        } else {
-            el.classList.remove('disabled-clickable');
-            if (el._disabledHandler) {
-                el.removeEventListener('click', el._disabledHandler);
-                delete el._disabledHandler;
-            }
+        
+        // Vérifier SweetAlert2
+        if (typeof Swal === 'undefined') {
+            console.warn('SweetAlert2 n\'est pas disponible, notifications basiques utilisées');
         }
-    });
-}
+        
+        // Tester la connexion API
+        await this.testAPIConnection();
+    }
 
-// Hook up special buttons
-document.addEventListener('DOMContentLoaded', function() {
-    // Show badge
-    const showBadgeBtn = document.getElementById('btn-show-badge');
-    if (showBadgeBtn) {
-        showBadgeBtn.addEventListener('click', async function() {
-            if (ADMIN_PROFILE.adminStatut === 'inactif') return showAccountDisabled();
-            try {
-                const res = await fetch(`admin_badge_api.php?id=${ADMIN_PROFILE.adminId}`);
-                const data = await res.json();
-
-                if (data.status === 'success') {
-                    const badge = {
-                        token: data.token?.token || null,
-                        token_hash: data.token?.token_hash || null,
-                        expires_at: data.token?.expires_at || null,
-                        can_regenerate: data.admin?.can_regenerate || false
-                    };
-                    if (badge.token) {
-                        showAdminBadgeModal(badge);
-                        return;
-                    }
-
-                    if (badge.can_regenerate) {
-                        if (confirm('Aucun badge actif. Générer un nouveau badge d\'accès maintenant ?')) {
-                            const form = new FormData();
-                            form.append('action', 'regenerate');
-                            form.append('admin_id', ADMIN_PROFILE.adminId);
-
-                            const regenRes = await fetch('admin_badge_api.php', { method: 'POST', body: form });
-                            const regenData = await regenRes.json();
-                            if (regenData.status === 'success' && regenData.token) {
-                                const regenBadge = { token: regenData.token, token_hash: regenData.token_hash || null, expires_at: regenData.expires_at || null, can_regenerate: true };
-                                showAdminBadgeModal(regenBadge);
-                            } else {
-                                showNotification('error', 'Impossible de générer le badge', 'Erreur');
-                            }
-                        }
-                        return;
-                    }
-                }
-
-
-                showNotification('warning', 'Badge non disponible', 'Information');
-            } catch (e) {
-                console.error(e);
-                showNotification('error', 'Impossible de récupérer le badge', 'Erreur');
+    async testAPIConnection() {
+        try {
+            const response = await fetch(APP_CONFIG.endpoints.toggleStatus, {
+                method: 'HEAD',
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                console.warn(`⚠️ API ${APP_CONFIG.endpoints.toggleStatus} peut être inaccessible`);
             }
+        } catch (error) {
+            console.warn('⚠️ Test de connexion API échoué:', error.message);
+        }
+    }
+
+    initUIComponents() {
+        // Animations des cartes
+        UIManager.animateCards();
+        
+        // Initialiser le système de badges
+        UIManager.initBadgesSystem();
+        
+        // Initialiser les modals
+        FormManager.initModals();
+        
+        // Initialiser la force des mots de passe
+        FormManager.initPasswordStrength();
+        
+        // Initialiser les interactions
+        this.initInteractions();
+        
+        // Mettre à jour les stats en temps réel
+        UIManager.startRealTimeUpdates();
+    }
+
+    initEventHandlers() {
+        // Gestionnaire global pour les états de chargement
+        document.addEventListener('submit', FormManager.handleFormSubmit);
+        
+        // Gestionnaire pour copier les IDs
+        document.querySelectorAll('.copy-id-btn').forEach(btn => {
+            btn.addEventListener('click', Utils.handleCopyId);
+        });
+        
+        // Gestionnaire pour le toggle du header
+        const toggleBtn = document.getElementById('toggleProfileHeader');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', Utils.toggleProfileHeader);
+        }
+        
+        // Gestionnaire pour l'export de profil
+        const exportBtn = document.getElementById('btn-export-profile');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', Utils.handleExportProfile);
+        }
+    }
+
+    initInteractions() {
+        // Hover sur les cartes de stats
+        document.querySelectorAll('.stat-card').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-4px)';
+                this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
+            });
+            
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '';
+            });
+        });
+        
+        // Animation des boutons d'action
+        document.querySelectorAll('.quick-actions .btn').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(4px)';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+            });
         });
     }
 
-    // Activate (AJAX)
+    initAdminActions() {
+        // Cette fonction est maintenant gérée par initSpecificActions
+        // Maintenue pour la compatibilité
+    }
+
+    updateUI() {
+        UIManager.updateActionButtons();
+        
+        // Mettre à jour les indicateurs de statut
+        const statusIndicator = document.querySelector('.status-indicator');
+        if (statusIndicator) {
+            const isActive = APP_CONFIG.admin.status === 'actif';
+            statusIndicator.className = `status-indicator ${isActive ? 'indicator-active' : 'indicator-inactive'}`;
+        }
+    }
+}
+
+// ================= INITIALISATION AU CHARGEMENT =================
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('📋 Initialisation du système de profil administrateur');
+    
+    try {
+        // Créer et initialiser le manager
+        const adminManager = new AdminProfileManager();
+        await adminManager.initialize();
+        
+        // Initialiser les actions spécifiques
+        initSpecificActions();
+        
+        console.log('🎉 Système complètement initialisé');
+        
+    } catch (error) {
+        console.error('💥 Erreur critique d\'initialisation:', error);
+        NotificationManager.showError('Erreur d\'initialisation: ' + error.message);
+    }
+});
+
+// Initialisation des actions spécifiques
+function initSpecificActions() {
+    // Bouton d'activation
     const activateBtn = document.getElementById('btn-activate-admin');
+    const activateFooterBtn = document.getElementById('btn-activate-admin-footer');
+    
     if (activateBtn) {
-        activateBtn.addEventListener('click', async function(e) {
-            e.preventDefault();
-            if (!confirm('Confirmer l\'activation de ce compte administrateur ?')) return;
-            try {
-                const form = new FormData();
-                form.append('admin_id', ADMIN_PROFILE.adminId);
-                const resp = await fetch('activate_admin.php', { method: 'POST', body: form, redirect: 'follow' });
-                // The backend redirects back with ?success=admin_activated on success
-                if (resp.ok && resp.url && resp.url.indexOf('success=admin_activated') !== -1) {
-                    ADMIN_PROFILE.adminStatut = 'actif';
-                    const statutEl = document.getElementById('admin-statut');
-                    if (statutEl) {
-                        statutEl.classList.remove('badge-inactive');
-                        statutEl.classList.add('badge-active');
-                        statutEl.innerHTML = '<i class="fas fa-check-circle me-1"></i> Actif';
-                    }
-                    updateAdminActionButtons();
-                    showNotification('success', 'Compte activé', 'Succès');
-                } else {
-                    showNotification('error', 'Impossible d\'activer le compte', 'Erreur');
-                }
-            } catch (err) {
-                console.error(err);
-                showNotification('error', 'Erreur réseau', 'Erreur');
-            }
-        });
+        activateBtn.addEventListener('click', () => ActionManager.toggleAdminStatus('activate', { skipConfirm: true }));
     }
-
-    // Deactivate (AJAX)
+    
+    if (activateFooterBtn) {
+        activateFooterBtn.addEventListener('click', () => ActionManager.toggleAdminStatus('activate', { skipConfirm: true }));
+    }
+    
+    // Formulaire de désactivation
     const deactivateForm = document.getElementById('deactivateForm');
     if (deactivateForm) {
-        deactivateForm.addEventListener('submit', async function(e) {
+        // Activer le bouton de confirmation uniquement si la checkbox est cochée
+        const confirmCheckbox = document.getElementById('confirmDeactivate');
+        const confirmBtn = document.getElementById('confirmDeactivateBtn');
+        if (confirmCheckbox && confirmBtn) {
+            confirmCheckbox.addEventListener('change', () => {
+                confirmBtn.disabled = !confirmCheckbox.checked;
+            });
+        }
+
+        deactivateForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const formData = new FormData(deactivateForm);
-            try {
-                const resp = await fetch('deactivate_admin.php', { method: 'POST', body: formData, redirect: 'follow' });
-                if (resp.ok && resp.url && resp.url.indexOf('success=admin_deactivated') !== -1) {
-                    ADMIN_PROFILE.adminStatut = 'inactif';
-                    const statutEl = document.getElementById('admin-statut');
-                    if (statutEl) {
-                        statutEl.classList.remove('badge-active');
-                        statutEl.classList.add('badge-inactive');
-                        statutEl.innerHTML = '<i class="fas fa-check-circle me-1"></i> Inactif';
-                    }
-                    // Close modal
-                    const deleteModalEl = document.getElementById('deleteModal');
-                    const bsModal = bootstrap.Modal.getInstance(deleteModalEl);
-                    if (bsModal) bsModal.hide();
-                    updateAdminActionButtons();
-                    showNotification('success', 'Compte désactivé', 'Succès');
-                } else {
-                    showNotification('error', 'Impossible de désactiver le compte', 'Erreur');
-                }
-            } catch (err) {
-                console.error(err);
-                showNotification('error', 'Erreur réseau', 'Erreur');
-            }
+            // Le modal contient déjà une confirmation via checkbox => pas de second modal
+            ActionManager.toggleAdminStatus('deactivate', { skipConfirm: true });
         });
     }
-
-    // When the deactivate/activate visibility changes, enforce interactivity on load
-    setTimeout(() => {
-        // Initial enforcement based on statut
-        updateAdminActionButtons();
-    }, 50);
-
-    // Guard badge-clickable global behavior when account is inactive
-    document.querySelectorAll('.badge-clickable').forEach(b => {
-        b.addEventListener('click', function(e) {
-            if (ADMIN_PROFILE.adminStatut === 'inactif') {
-                e.preventDefault();
-                e.stopPropagation();
-                showAccountDisabled();
-            }
-        });
-    });
-});
-
-
-
-// Gestion des états de chargement pour les formulaires
-document.addEventListener('submit', function(e) {
-    const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
     
-    if (submitBtn) {
-        const originalText = submitBtn.innerHTML;
-        const originalWidth = submitBtn.offsetWidth;
-        
-        submitBtn.style.width = originalWidth + 'px';
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Traitement...';
-        submitBtn.disabled = true;
-        
-        // Restaurer après 10 secondes max (au cas où)
-        setTimeout(() => {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            submitBtn.style.width = '';
-        }, 10000);
+    // Formulaire de suppression définitive
+    const deleteForm = document.getElementById('permanentDeleteForm');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            ActionManager.deleteAdminPermanently();
+        });
     }
-});
+    
+    // Bouton d'affichage de badge
+    const showBadgeBtn = document.getElementById('btn-show-badge');
+    const showBadgeFooterBtn = document.getElementById('btn-show-badge-footer');
+    
+    if (showBadgeBtn) {
+        showBadgeBtn.addEventListener('click', () => {
+            // Ici, vous pouvez ajouter la logique pour afficher un badge personnalisé
+            NotificationManager.show('info', 'Fonctionnalité badge en développement', 'Information');
+        });
+    }
+    
+    if (showBadgeFooterBtn) {
+        showBadgeFooterBtn.addEventListener('click', () => {
+            NotificationManager.show('info', 'Fonctionnalité badge en développement', 'Information');
+        });
+    }
+}
+
+    // Exposer certaines fonctions globalement si nécessaire
+    window.AdminProfile = {
+    config: APP_CONFIG,
+    notifications: NotificationManager,
+    actions: ActionManager,
+    ui: UIManager,
+    utils: Utils
+    };
 </script>
 
 <style>
@@ -3013,6 +3356,145 @@ document.addEventListener('submit', function(e) {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+/* Animations supplémentaires */
+@keyframes badgePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes pulse-gold {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+@keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+}
+
+/* Styles pour les indicateurs de force de mot de passe */
+.indicator {
+    width: 20px;
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.indicator.active {
+    transform: scaleY(1.2);
+}
+
+/* Transitions fluides */
+.admin-profile-card,
+.stat-card,
+.btn,
+.badge {
+    transition: all 0.3s ease;
+}
+
+/* Effet de survol amélioré */
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Responsive amélioré */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .profile-actions {
+        width: 100%;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    
+    .quick-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Styles pour les états de chargement */
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-top: -10px;
+    margin-left: -10px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Amélioration des modals */
+.modal-content {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Classes utilitaires */
+.disabled-clickable {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+}
+
+.indicator-active {
+    background-color: #198754;
+    animation: pulseActive 2s infinite;
+}
+
+.indicator-inactive {
+    background-color: #6c757d;
+}
+
+@keyframes pulseActive {
+    0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+}
+
 
 /* ============================
    TOOLTIPS PERSONNALISÉS

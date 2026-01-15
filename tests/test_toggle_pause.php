@@ -27,7 +27,7 @@ $pdo->prepare("DELETE FROM pointages WHERE employe_id = ? AND DATE(COALESCE(date
 
 // Start a pause
 $now = date('Y-m-d H:i:s', time() - 360); // simulate 6 minutes ago
-$pdo->prepare("INSERT INTO pointages (employe_id, type, date_heure, etat, statut, type_justification, commentaire) VALUES (?, 'pause_debut', ?, 'pause', 'présent', 'dejeuner', 'test start')")->execute([$empId, $now]);
+$pdo->prepare("INSERT INTO pointages (employe_id, type, date_heure, etat, statut, commentaire, pause_debut) VALUES (?, 'pause_debut', ?, 'pause', 'présent', ?, ?)")->execute([$empId, $now, 'test start', $now]);
 $startId = $pdo->lastInsertId();
 if (!$startId) fail('Échec création pause_debut');
 ok('pause_debut created id=' . $startId);

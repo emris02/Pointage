@@ -399,7 +399,7 @@ if ($isAdmin) {
                                                     <div class="info-content flex-grow-1">
                                                         <div class="info-label text-muted small mb-1">Statut</div>
                                                         <div class="info-value">
-                                                            <span class="badge <?= ($employe['status'] ?? '') === 'active' ? 'bg-success' : 'bg-secondary' ?> px-3 py-2">
+                                                            <span id="employee-status-badge" class="badge <?= ($employe['status'] ?? '') === 'active' ? 'bg-success' : 'bg-secondary' ?> px-3 py-2">
                                                                 <?= isset($stats['status']) ? $stats['status'] : 'N/A' ?>
                                                             </span>
                                                         </div>
@@ -416,15 +416,15 @@ if ($isAdmin) {
                                                         <div class="info-label text-muted small mb-1">Badge d'accès</div>
                                                         <div class="info-value d-flex align-items-center justify-content-between">
                                                             <?php if ($badge_actif && isset($badgeToken['token'])): ?>
-                                                                <span class="badge bg-success px-3 py-2">
+                                                                <span id="employee-badge-status" class="badge bg-success px-3 py-2">
                                                                     <i class="fas fa-check-circle me-1"></i> ACTIF
                                                                 </span>
-                                                                <small class="text-muted ms-2">Valide jusqu'au <?= date('d/m/Y', strtotime($badgeToken['expires_at'])) ?></small>
+                                                                <small id="employee-badge-expiry" class="text-muted ms-2">Valide jusqu'au <?= date('d/m/Y', strtotime($badgeToken['expires_at'])) ?></small>
                                                             <?php else: ?>
-                                                                <span class="badge bg-secondary px-3 py-2">
+                                                                <span id="employee-badge-status" class="badge bg-secondary px-3 py-2">
                                                                     <i class="fas fa-times-circle me-1"></i> INACTIF
                                                                 </span>
-                                                                <small class="text-muted ms-2">Aucun badge actif</small>
+                                                                <small id="employee-badge-expiry" class="text-muted ms-2">Aucun badge actif</small>
                                                             <?php endif; ?>
                                                         </div>
                                                     </div>
@@ -1193,12 +1193,50 @@ function initInteractions() {
     const deleteEmployeeBtn = document.getElementById('deleteEmployeeBtn');
     const confirmDelete = document.getElementById('confirmDelete');
 
-    function updateStatusUI(isActive) {
+    function updateStatusUI(isActive, serverData = null) {
         // avatar status
         const avatar = document.querySelector('.avatar-status');
         if (avatar) {
             avatar.classList.toggle('status-online', isActive);
             avatar.classList.toggle('status-offline', !isActive);
+        }
+
+        // Update the visible status badge in the info panel
+        const statusBadge = document.getElementById('employee-status-badge');
+        if (statusBadge) {
+            statusBadge.textContent = isActive ? 'Actif' : 'Inactif';
+            statusBadge.classList.toggle('bg-success', isActive);
+            statusBadge.classList.toggle('bg-secondary', !isActive);
+        }
+
+        // Update badge status and expiry if provided by server
+        const badgeStatus = document.getElementById('employee-badge-status');
+        const badgeExpiry = document.getElementById('employee-badge-expiry');
+        if (badgeStatus) {
+            if (serverData && serverData.badge) {
+                if (serverData.badge.active) {
+                    badgeStatus.className = 'badge bg-success px-3 py-2';
+                    badgeStatus.innerHTML = '<i class="fas fa-check-circle me-1"></i> ACTIF';
+                    if (badgeExpiry) badgeExpiry.textContent = 'Valide jusqu\'au ' + formatDate(serverData.badge.expires_at);
+                    PROFILE_CONFIG.badgeActive = true;
+                    PROFILE_CONFIG.badgeExpiresAt = serverData.badge.expires_at || '';
+                } else {
+                    badgeStatus.className = 'badge bg-secondary px-3 py-2';
+                    badgeStatus.innerHTML = '<i class="fas fa-times-circle me-1"></i> INACTIF';
+                    if (badgeExpiry) badgeExpiry.textContent = 'Aucun badge actif';
+                    PROFILE_CONFIG.badgeActive = false;
+                    PROFILE_CONFIG.badgeExpiresAt = '';
+                }
+            } else {
+                // Fallback: derive from isActive
+                if (!isActive) {
+                    badgeStatus.className = 'badge bg-secondary px-3 py-2';
+                    badgeStatus.innerHTML = '<i class="fas fa-times-circle me-1"></i> INACTIF';
+                    if (badgeExpiry) badgeExpiry.textContent = 'Aucun badge actif';
+                    PROFILE_CONFIG.badgeActive = false;
+                    PROFILE_CONFIG.badgeExpiresAt = '';
+                }
+            }
         }
 
         // Update dropdown actions to show correct toggle
@@ -1264,7 +1302,7 @@ function initInteractions() {
 
             if (json.success) {
                 Swal.fire({ title: 'Activé', text: json.message || 'Employé activé', icon: 'success', timer: 1800, showConfirmButton: false });
-                updateStatusUI(true);
+                updateStatusUI(true, json);
             } else {
                 Swal.fire({ title: 'Erreur', text: json.message || 'Impossible d\'activer', icon: 'error' });
             }
@@ -1305,7 +1343,7 @@ function initInteractions() {
 
             if (json.success) {
                 Swal.fire({ title: 'Désactivé', text: json.message || 'Employé désactivé', icon: 'success', timer: 1800, showConfirmButton: false });
-                updateStatusUI(false);
+                updateStatusUI(false, json);
             } else {
                 Swal.fire({ title: 'Erreur', text: json.message || 'Impossible de désactiver', icon: 'error' });
             }
@@ -1357,6 +1395,15 @@ function initInteractions() {
 
 
 function initBadgeTimer() {
+    // Clear previous timer if exists
+    if (window.PROFILE_BADGE_TIMER_INTERVAL) {
+        clearInterval(window.PROFILE_BADGE_TIMER_INTERVAL);
+        window.PROFILE_BADGE_TIMER_INTERVAL = null;
+    }
+
+    const existing = document.querySelector('.badge-timer');
+    if (existing && existing.parentNode) existing.remove();
+
     if (!PROFILE_CONFIG.badgeExpiresAt) return;
     
     const timerElement = document.createElement('div');
@@ -1397,7 +1444,7 @@ function initBadgeTimer() {
         }
         
         updateTimer();
-        setInterval(updateTimer, 1000);
+        window.PROFILE_BADGE_TIMER_INTERVAL = setInterval(updateTimer, 1000);
     }
 }
 
@@ -1415,6 +1462,16 @@ function updateIndicators() {
 }
 
 // Fonctions utilitaires
+function formatDate(sqlDate) {
+    if (!sqlDate) return '';
+    try {
+        // Normalize MySQL datetime to ISO for Date parsing
+        const iso = sqlDate.replace(' ', 'T');
+        const d = new Date(iso);
+        return d.toLocaleDateString('fr-FR');
+    } catch (e) { return sqlDate; }
+}
+
 function printBadge() {
     const printWindow = window.open('', '_blank');
     

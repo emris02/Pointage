@@ -10,6 +10,13 @@ date_default_timezone_set('Europe/Paris');
  */
 class BadRequestException extends Exception {}
 class UnauthorizedException extends Exception {}
+class ConflictException extends Exception {
+    public array $payload = [];
+    public function __construct(string $message = "", array $payload = [], int $code = 0, ?Throwable $previous = null) {
+        parent::__construct($message, $code, $previous);
+        $this->payload = $payload;
+    }
+}
 
 class PointageService {
     private PDO $pdo;
@@ -24,6 +31,15 @@ class PointageService {
     /**
      * Traite un pointage en validant le token puis en enregistrant l'arrivée ou le départ
      */
+    public function getLastPointageToday(int $userId, string $userType = 'employe'): ?array {
+        $current_date = date('Y-m-d');
+        $idField = $userType === 'admin' ? 'admin_id' : 'employe_id';
+        $stmt = $this->pdo->prepare("SELECT id, type, date_heure FROM pointages WHERE $idField = ? AND DATE(date_heure) = ? ORDER BY date_heure DESC LIMIT 1");
+        $stmt->execute([$userId, $current_date]);
+        $last = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $last ?: null;
+    }
+
     public function traiterPointage(string $token): array {
         // Prefer BadgeManager flow if available (supports admin tokens)
         if (class_exists('BadgeManager') && method_exists('BadgeManager', 'verifyToken')) {
@@ -32,6 +48,13 @@ class PointageService {
             $userType = $tokenData['user_type'] ?? 'employe';
             $userId = (int)($tokenData['user_id'] ?? 0);
             $tokenId = (int)($tokenData['id'] ?? 0);
+
+            // detect conflicts: if last is arrival and next type would be non-arrival, require confirmation
+            $nextType = $this->determinerTypePointage($userId, $userType);
+            $last = $this->getLastPointageToday($userId, $userType);
+            if ($last && $last['type'] === 'arrivee' && $nextType !== 'arrivee') {
+                throw new ConflictException('Pointage en conflit : validation requise', ['last' => $last]);
+            }
 
             return $this->enregistrerPointageGeneric($userType, $userId, $tokenId);
         }
@@ -45,6 +68,13 @@ class PointageService {
         $this->verifierExpiration($timestamp);
 
         $tokenData = $this->verifierTokenEnBase($token, $employe_id);
+
+        // legacy detection of conflict
+        $nextType = $this->determinerTypePointage($employe_id);
+        $last = $this->getLastPointageToday($employe_id, 'employe');
+        if ($last && $last['type'] === 'arrivee' && $nextType !== 'arrivee') {
+            throw new ConflictException('Pointage en conflit : validation requise', ['last' => $last]);
+        }
 
         return $this->enregistrerPointage($employe_id, (int)$tokenData['id']);
     }
@@ -153,16 +183,19 @@ class PointageService {
         $limite = strtotime(date('Y-m-d') . ' 09:00:00');
         $retard = strtotime($current_time) > $limite;
 
+        $retardMinutes = $retard ? max(0, (int)floor((strtotime($current_time) - strtotime(date('Y-m-d') . ' 09:00:00')) / 60)) : 0;
+        $comment = $retard ? 'Arrivée après 09h00' : null;
+
         $sql = $userType === 'admin'
-            ? "INSERT INTO pointages (date_heure, admin_id, type, retard_justifie, retard_cause) VALUES (?, ?, 'arrivee', ?, ?)"
-            : "INSERT INTO pointages (date_heure, employe_id, type, retard_justifie, retard_cause) VALUES (?, ?, 'arrivee', ?, ?)";
+            ? "INSERT INTO pointages (date_heure, admin_id, type, retard_minutes, commentaire) VALUES (?, ?, 'arrivee', ?, ?)"
+            : "INSERT INTO pointages (date_heure, employe_id, type, retard_minutes, commentaire) VALUES (?, ?, 'arrivee', ?, ?)";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
             $current_time,
             $userId,
-            $retard ? 'non' : null,
-            $retard ? 'Arrivée après 09h00' : null,
+            $retardMinutes,
+            $comment,
         ]);
 
         return [
@@ -235,6 +268,14 @@ try {
 } catch (UnauthorizedException $e) {
     http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+} catch (ConflictException $e) {
+    http_response_code(409);
+    echo json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage(),
+        'code' => 'NEEDS_CONFIRMATION',
+        'details' => $e->payload
+    ]);
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Erreur interne serveur']);

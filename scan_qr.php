@@ -391,6 +391,10 @@
 
 <!-- Scripts -->
 <!-- bootstrap loaded from footer -->
+<script>
+    // Terminal API key exposée pour l'usage du scanner (nécessaire pour l'envoi de justificatifs)
+    window.TERMINAL_API_KEY = <?= json_encode(defined('TERMINAL_API_KEY') ? TERMINAL_API_KEY : '') ?>;
+</script>
 <script src="assets/js/qr-scanner.umd.min.js"></script>
 <script type="module" src="assets/js/scan.js?v=1.0"></script>
 

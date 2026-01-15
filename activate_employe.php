@@ -32,10 +32,20 @@ try {
         $msg = sprintf("[%s] Employe activé: id=%d par admin_id=%d\n", date('Y-m-d H:i:s'), $employe_id, $current_admin_id);
         file_put_contents($logDir . '/admin_actions.log', $msg, FILE_APPEND);
 
+        // Try to ensure a badge exists when activating (regenerate if missing)
+        $badgeInfo = null;
+        try {
+            require_once __DIR__ . '/src/services/BadgeManager.php';
+            $regen = BadgeManager::regenerateToken($employe_id, $pdo);
+            $badgeInfo = ['active' => true, 'expires_at' => $regen['expires_at'] ?? null];
+        } catch (Throwable $e) {
+            error_log('activate_employe (badge regen): ' . $e->getMessage());
+        }
+
         // If this is an AJAX request, return JSON so the client can show an in-page notification without redirect
         if ($isAjax) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'message' => 'Employé activé', 'statut' => 'actif']);
+            echo json_encode(['success' => true, 'message' => 'Employé activé', 'statut' => 'actif', 'badge' => $badgeInfo]);
             exit();
         }
 

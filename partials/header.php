@@ -524,7 +524,7 @@ toggleBreakBtn?.addEventListener('click', async () => {
             
             // Envoyer la requête au serveur (à adapter selon votre backend)
             try {
-                const response = await fetch('api/toggle_break.php', {
+                const response = await fetch('api/toggle_pause.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -547,7 +547,7 @@ toggleBreakBtn?.addEventListener('click', async () => {
         
         // Envoyer la requête au serveur
         try {
-            const response = await fetch('api/toggle_break.php', {
+            const response = await fetch('api/toggle_pause.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
